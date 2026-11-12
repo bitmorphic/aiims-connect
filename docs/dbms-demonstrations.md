@@ -1,0 +1,2 @@
+# DBMS demonstrations
+Admission transaction: lock ward row, insert admission, trigger decrements capacity; rollback restores both. Discharge: insert one bill and mark admission discharged; trigger releases bed. Referral acceptance: lock referral, create appointment and update status in one transaction. Demonstrate ACID, COMMIT/ROLLBACK, unique active-slot index, CHECK constraints, views, procedures, triggers, GRANT/REVOKE and EXPLAIN.
