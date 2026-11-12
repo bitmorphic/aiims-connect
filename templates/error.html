@@ -1,1 +1,5 @@
-{% extends 'base.html' %}{% block content %}<div class='panel'><h1>{{code}}</h1><p>{{message}}</p><a href='/dashboard'>Dashboard</a></div>{% endblock %}
+{% extends "base.html" %}
+{% block title %}{{ code }} | AIIMS Connect{% endblock %}
+{% block content %}
+<div class="error-page"><div class="error-code">{{ code }}</div><span class="page-eyebrow">SOMETHING WENT OFF TRACK</span><h1>{{ message }}</h1><a class="button button-blue" href="{{ url_for('main.dashboard') if session.get('login_id') else url_for('main.home') }}">Return to workspace <span>→</span></a></div>
+{% endblock %}

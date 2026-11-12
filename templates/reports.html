@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Reports | AIIMS Connect{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="page-eyebrow">NETWORK INSIGHTS</span><h1>Reports & performance</h1><p>Aggregate reporting generated from database views.</p></div></div>
+<div class="reports-grid">
+  <section class="content-card"><div class="card-heading"><div><span class="page-eyebrow">FINANCIAL SUMMARY</span><h2>Branch revenue</h2></div></div>
+    <div class="table-responsive"><table class="records-table"><thead><tr><th>BRANCH</th><th>BILLS</th><th>BILLED</th><th>COLLECTED</th><th>OUTSTANDING</th></tr></thead><tbody>{% for r in revenue %}<tr><td>{{ r.Branch_Name }}</td><td>{{ r.Bills_Generated }}</td><td>₹{{ r.Total_Billed }}</td><td>₹{{ r.Total_Collected }}</td><td>₹{{ r.Total_Outstanding }}</td></tr>{% else %}<tr><td colspan="5">No revenue data yet.</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+  <section class="content-card"><div class="card-heading"><div><span class="page-eyebrow">CAPACITY SUMMARY</span><h2>Network occupancy</h2></div></div>
+    <div class="table-responsive"><table class="records-table"><thead><tr><th>BRANCH</th><th>WARDS</th><th>BEDS</th><th>AVAILABLE</th><th>OCCUPANCY</th></tr></thead><tbody>{% for r in occupancy %}<tr><td>{{ r.Branch_Name }}</td><td>{{ r.Wards }}</td><td>{{ r.Total_Beds }}</td><td>{{ r.Available_Beds }}</td><td>{{ r.Occupancy_Pct }}%</td></tr>{% else %}<tr><td colspan="5">No capacity data yet.</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}AIIMS Connect | One Patient. One ID. Every Branch.{% endblock %}
+{% block content %}
+<div class="landing-shell">
+  <nav class="site-nav">
+    <a class="site-brand" href="{{ url_for('main.home') }}">
+      <span class="brand-mark">+</span>
+      <span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span>
+    </a>
+    <div class="site-nav-links">
+      <a href="#platform">Platform</a>
+      <a href="#network">Network</a>
+      <a href="#workflow">How it works</a>
+    </div>
+    <a class="button button-dark nav-cta" href="{{ url_for('main.login') }}">Open workspace <span>↗</span></a>
+  </nav>
+
+  <section class="hero-section">
+    <div class="hero-copy">
+      <div class="eyebrow"><span class="eyebrow-dot"></span> A CONNECTED HOSPITAL NETWORK</div>
+      <h1>One patient.<br><em>Every branch.</em><br>Always connected.</h1>
+      <p class="hero-description">A unified digital workspace for patient identity, appointments and hospital operations across a multi-branch care network.</p>
+      <div class="hero-actions">
+        <a class="button button-blue" href="{{ url_for('main.login') }}">Enter AIIMS Connect <span>→</span></a>
+        <a class="text-link" href="#platform">Explore the platform <span>↓</span></a>
+      </div>
+      <div class="hero-proof">
+        <div class="proof-avatars"><span>+</span><span>◎</span><span>✚</span></div>
+        <div><b>One connected record</b><small>Designed around a shared UHID</small></div>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-label="Illustration of three connected hospital branches">
+      <div class="visual-orbit orbit-one"></div>
+      <div class="visual-orbit orbit-two"></div>
+      <div class="visual-glow"></div>
+      <div class="visual-topline"><span><i></i> NETWORK OVERVIEW</span><b>LIVE CONCEPT</b></div>
+      <div class="network-core">
+        <span class="core-symbol">+</span>
+        <b>AIIMS Connect</b>
+        <small>Shared patient identity</small>
+      </div>
+      <svg class="network-lines" viewBox="0 0 560 420" role="presentation">
+        <path d="M280 205 C210 145 170 115 112 94" />
+        <path d="M280 205 C350 145 390 115 448 94" />
+        <path d="M280 205 C280 270 280 294 280 340" />
+        <circle cx="112" cy="94" r="5"/><circle cx="448" cy="94" r="5"/><circle cx="280" cy="340" r="5"/>
+      </svg>
+      <div class="branch-node node-delhi"><span class="node-icon">✚</span><div><b>New Delhi</b><small>Main branch</small></div><span class="node-pulse"></span></div>
+      <div class="branch-node node-jodhpur"><span class="node-icon">✚</span><div><b>Jodhpur</b><small>Connected branch</small></div><span class="node-pulse"></span></div>
+      <div class="branch-node node-bhopal"><span class="node-icon">✚</span><div><b>Bhopal</b><small>Connected branch</small></div><span class="node-pulse"></span></div>
+      <div class="visual-footer"><span><i></i> Unified records</span><span>Cross-branch workflows</span></div>
+    </div>
+  </section>
+
+  <section class="metrics-strip" id="network">
+    <div class="metrics-intro"><span>THE NETWORK</span><b>One view.<br>Multiple locations.</b></div>
+    <div class="metric"><strong>{{ stats.branches }}</strong><span>Branches</span></div>
+    <div class="metric"><strong>{{ stats.departments }}</strong><span>Departments</span></div>
+    <div class="metric"><strong>{{ stats.doctors }}</strong><span>Doctors</span></div>
+    <div class="metric"><strong>{{ stats.wards }}</strong><span>Wards & units</span></div>
+  </section>
+
+  <section class="platform-section" id="platform">
+    <div class="section-heading">
+      <div><div class="eyebrow">BUILT FOR CONNECTED CARE</div><h2>Hospital operations,<br><em>working as one.</em></h2></div>
+      <p>Bring everyday workflows together around one patient identity, with the database keeping every relationship and transaction consistent.</p>
+    </div>
+    <div class="feature-grid">
+      <article class="feature-card feature-card-dark">
+        <div class="feature-icon">◎</div><span class="feature-kicker">01 / PATIENT IDENTITY</span>
+        <h3>A single patient record.</h3><p>Use a unique UHID to connect appointments, admissions and care history across branches.</p>
+        <div class="feature-art patient-art"><span>UHID</span><b>AIC•••••••</b><i>Verified patient record</i></div>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon feature-icon-blue">▦</div><span class="feature-kicker">02 / OPD WORKFLOW</span>
+        <h3>Appointments with structure.</h3><p>Book doctor slots and track tokens with MySQL constraints and stored procedures.</p>
+        <div class="mini-schedule"><div><b>09:00</b><span>OPD</span><i class="slot-active"></i></div><div><b>09:30</b><span>OPD</span><i></i></div><div><b>10:00</b><span>OPD</span><i class="slot-active"></i></div></div>
+      </article>
+      <article class="feature-card">
+        <div class="feature-icon feature-icon-mint">⇄</div><span class="feature-kicker">03 / NETWORK COORDINATION</span>
+        <h3>Care that can move.</h3><p>Send referrals between branches and create the receiving appointment as one workflow.</p>
+        <div class="referral-art"><span>New Delhi</span><i>······→</i><span>Jodhpur</span></div>
+      </article>
+      <article class="feature-card feature-card-wide">
+        <div class="wide-copy"><div class="feature-icon feature-icon-peach">▣</div><span class="feature-kicker">04 / INPATIENT & BILLING</span><h3>From bed availability<br>to discharge.</h3><p>Admissions consume ward capacity. Discharge releases the bed and generates a linked bill through database procedures and triggers.</p></div>
+        <div class="bed-visual"><div class="bed-top"><span>WARD CAPACITY</span><b>Live database view</b></div><div class="bed-grid">{% for n in range(18) %}<i class="{% if n in [2,7,11,14] %}bed-occupied{% endif %}"></i>{% endfor %}</div><div class="bed-legend"><span><i class="legend-free"></i> Available</span><span><i class="legend-occupied"></i> Occupied</span></div></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="workflow-section" id="workflow">
+    <div class="workflow-left"><div class="eyebrow">THE CONNECTED WORKFLOW</div><h2>One record.<br><em>Every step linked.</em></h2><p>From registration to follow-up, each module writes to the same relational database.</p><a class="button button-blue" href="{{ url_for('main.login') }}">Explore the workspace <span>→</span></a></div>
+    <div class="workflow-steps">
+      <div class="workflow-step"><span>01</span><div><b>Register</b><small>Create a patient UHID and login identity</small></div><i>◎</i></div>
+      <div class="workflow-step"><span>02</span><div><b>Schedule</b><small>Book an OPD appointment with a doctor</small></div><i>▦</i></div>
+      <div class="workflow-step"><span>03</span><div><b>Coordinate</b><small>Record prescriptions and inter-branch referrals</small></div><i>⇄</i></div>
+      <div class="workflow-step"><span>04</span><div><b>Admit & discharge</b><small>Update ward availability and generate bills</small></div><i>▣</i></div>
+    </div>
+  </section>
+
+  <section class="closing-cta">
+    <div><span class="eyebrow">READY TO EXPLORE?</span><h2>Care operations,<br><em>connected by design.</em></h2></div>
+    <a class="button button-light" href="{{ url_for('main.login') }}">Open the workspace <span>↗</span></a>
+  </section>
+
+  <footer class="site-footer">
+    <a class="site-brand" href="{{ url_for('main.home') }}"><span class="brand-mark">+</span><span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span></a>
+    <span>One Patient. One ID. Every Branch.</span>
+    <small>Independent academic prototype. Not affiliated with AIIMS or the Government of India. Uses synthetic demonstration data.</small>
+  </footer>
+</div>
+{% endblock %}

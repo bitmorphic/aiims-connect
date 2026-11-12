@@ -1,7 +1,148 @@
-{% extends 'base.html' %}{% block content %}<div class="heading"><small>WORKSPACE</small><h1>{{title}}</h1></div>
-{% if kind=='patient' and session.role in ['chain_admin','branch_admin','receptionist'] %}<div class="panel mb-3"><h5>Register patient</h5><form method="post" class="row g-2"><div class="col"><input class="form-control" name="name" placeholder="Full name" required></div><div class="col"><input class="form-control" type="date" name="dob" required></div><div class="col"><select class="form-select" name="gender"><option value="">Gender</option><option>Male</option><option>Female</option><option>Other</option></select></div><div class="col"><input class="form-control" name="phone" placeholder="Phone"></div><div class="col"><input class="form-control" name="address" placeholder="Address"></div><div class="col"><button class="btn btn-primary">Register</button></div></form></div>{% endif %}
-{% if kind=='appointment' and session.role in ['patient','chain_admin','branch_admin','receptionist'] %}<div class="panel mb-3"><h5>Book appointment</h5><form method="post" class="row g-2">{% if session.role!='patient' %}<div class="col"><select class="form-select" name="uhid">{% for p in extra.patients %}<option value="{{p.UHID}}">{{p.Name}} / {{p.UHID}}</option>{% endfor %}</select></div>{% endif %}<div class="col"><select class="form-select" name="branch_id">{% for b in extra.branches %}<option value="{{b.Branch_ID}}">{{b.Branch_Name}}</option>{% endfor %}</select></div><div class="col"><select class="form-select" name="staff_id">{% for d in extra.doctors %}<option value="{{d.Staff_ID}}">{{d.Name}} · {{d.Branch_Name}}</option>{% endfor %}</select></div><div class="col"><input class="form-control" type="date" name="appt_date" required></div><div class="col"><input class="form-control" type="time" name="time_slot" required></div><div class="col"><button class="btn btn-primary">Book</button></div></form></div>{% endif %}
-{% if kind=='admission' and session.role in ['chain_admin','branch_admin','receptionist'] %}<div class="panel mb-3"><h5>Admit patient</h5><form method="post" class="row g-2"><div class="col"><select class="form-select" name="uhid">{% for p in extra.patients %}<option value="{{p.UHID}}">{{p.Name}}</option>{% endfor %}</select></div><div class="col"><select class="form-select" name="ward_id">{% for w in extra.wards %}<option value="{{w.Ward_ID}}">{{w.Ward_Name}} ({{w.Available_Beds}} free)</option>{% endfor %}</select></div><div class="col"><input class="form-control" name="attendant_name" placeholder="Attendant"></div><div class="col"><input class="form-control" name="attendant_phone" placeholder="Phone"></div><div class="col"><button class="btn btn-primary">Admit</button></div></form></div>{% endif %}
-{% if kind=='referral' and session.role=='doctor' %}<div class="panel mb-3"><h5>Create referral</h5><form method="post" class="row g-2"><div class="col"><select class="form-select" name="uhid">{% for p in extra.patients %}<option value="{{p.UHID}}">{{p.Name}}</option>{% endfor %}</select></div><div class="col"><select class="form-select" name="to_branch_id">{% for b in extra.branches if b.Branch_ID!=session.branch_id %}<option value="{{b.Branch_ID}}">{{b.Branch_Name}}</option>{% endfor %}</select></div><div class="col"><input class="form-control" name="reason" placeholder="Reason" required></div><div class="col"><button class="btn btn-primary">Refer</button></div></form></div>{% endif %}
-{% if kind=='prescription' and session.role=='doctor' %}<div class="panel mb-3"><h5>Add prescription</h5><form method="post" class="row g-2"><div class="col"><select class="form-select" name="appt_id">{% for a in extra.appointments %}<option value="{{a.Appt_ID}}">Appointment {{a.Appt_ID}} / {{a.UHID}}</option>{% endfor %}</select></div><div class="col"><input class="form-control" name="medicine_name" placeholder="Medicine" required></div><div class="col"><input class="form-control" name="dosage" placeholder="Dosage" required></div><div class="col"><input class="form-control" name="notes" placeholder="Notes"></div><div class="col"><button class="btn btn-primary">Save</button></div></form></div>{% endif %}
-<div class="panel"><input id="search" class="form-control mb-3" placeholder="Search records"><div class="table-responsive"><table class="table" id="data"><thead><tr>{% if rows %}{% for col in rows[0].keys() %}<th>{{col}}</th>{% endfor %}{% if kind in ['appointment','admission','referral'] %}<th>Action</th>{% endif %}{% endif %}</tr></thead><tbody>{% for r in rows %}<tr>{% for v in r.values() %}<td>{{v}}</td>{% endfor %}{% if kind=='appointment' %}<td>{% if r.Status=='Booked' %}<form method="post" action="{{url_for('main.cancel',i=r.Appt_ID)}}"><button class="btn btn-sm btn-outline-danger">Cancel</button></form>{% endif %}</td>{% elif kind=='admission' %}<td>{% if r.Status=='Active' and session.role in ['chain_admin','branch_admin','receptionist'] %}<form method="post" action="{{url_for('main.discharge',i=r.Admission_ID)}}"><button class="btn btn-sm btn-outline-primary">Discharge & bill</button></form>{% endif %}</td>{% elif kind=='referral' %}<td>{% if r.Status=='Pending' and session.role in ['chain_admin','branch_admin','receptionist'] %}<form method="post" action="{{url_for('main.accept_referral',i=r.Referral_ID)}}" class="d-flex gap-1"><select class="form-select form-select-sm" name="doctor_id" required>{% for d in extra.doctors if d.Branch_ID|string == r.To_Branch_ID|string %}<option value="{{d.Staff_ID}}">{{d.Name}}</option>{% endfor %}</select><input class="form-control form-control-sm" type="date" name="appt_date" required><input class="form-control form-control-sm" type="time" name="time_slot" required><button class="btn btn-sm btn-primary">Accept</button></form>{% endif %}</td>{% endif %}</tr>{% else %}<tr><td>No records found.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}
+{% extends "base.html" %}
+{% block title %}{{ title }} | AIIMS Connect{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><span class="page-eyebrow">{{ eyebrow or 'WORKSPACE' }}</span><h1>{{ title }}</h1><p>{{ subtitle or 'Manage connected hospital records and workflows.' }}</p></div>
+  <div class="table-count"><b>{{ rows|length }}</b><small>records shown</small></div>
+</div>
+
+{% if kind == 'patients' and can_create %}
+<section class="content-card form-card">
+  <div class="card-heading"><div><span class="page-eyebrow">NEW PATIENT</span><h2>Register a patient</h2></div><span class="form-icon">◎</span></div>
+  <form method="post" class="data-form">
+    <label>Full name<input name="name" maxlength="100" required placeholder="Patient's full name"></label>
+    <label>Date of birth<input type="date" name="dob" min="1900-01-02" required></label>
+    <label>Gender<select name="gender" required><option value="">Select gender</option><option>Male</option><option>Female</option><option>Other</option></select></label>
+    <label>Blood group<select name="blood_group"><option value="">Not specified</option>{% for bg in ['A+','A-','B+','B-','AB+','AB-','O+','O-'] %}<option>{{ bg }}</option>{% endfor %}</select></label>
+    <label>Phone<input name="phone" maxlength="15" required placeholder="Synthetic demo phone"></label>
+    <label>Address<input name="address" maxlength="255" required placeholder="City or address"></label>
+    <label>Patient username<input name="username" minlength="4" maxlength="50" required placeholder="Login username"></label>
+    <label>Temporary password<input type="password" name="password" minlength="8" required placeholder="At least 8 characters"></label>
+    <div class="form-submit"><button class="button button-blue" type="submit">Create patient record <span>→</span></button><small>A UHID and login are generated together.</small></div>
+  </form>
+</section>
+{% endif %}
+
+{% if kind == 'appointments' and can_create %}
+<section class="content-card form-card">
+  <div class="card-heading"><div><span class="page-eyebrow">OPD SCHEDULING</span><h2>Book an appointment</h2></div><span class="form-icon">▦</span></div>
+  <form method="post" class="data-form">
+    {% if session.role != 'patient' %}
+    <label>Patient<select name="patient_uhid" required><option value="">Choose a patient</option>{% for p in patients %}<option value="{{ p.UHID }}">{{ p.Name }} · {{ p.UHID }}</option>{% endfor %}</select></label>
+    {% endif %}
+    <label>Doctor<select name="doctor_id" required><option value="">Choose a doctor</option>{% for d in doctors %}<option value="{{ d.Staff_ID }}">{{ d.Name }} · {{ d.Specialization }} · {{ d.Branch_Name }}</option>{% endfor %}</select></label>
+    <label>Appointment date<input type="date" name="appt_date" min="{{ (now_date if now_date is defined else '') }}" required></label>
+    <label>OPD time slot<select name="time_slot" required><option value="">Choose a 30-minute slot</option>{% for t in ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','14:00','14:30','15:00','15:30','16:00','16:30'] %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select></label>
+    <div class="form-submit"><button class="button button-blue" type="submit">Book appointment <span>→</span></button><small>Doctor branch, slot uniqueness and token are enforced by MySQL.</small></div>
+  </form>
+</section>
+{% endif %}
+
+{% if kind == 'admissions' and can_create %}
+<section class="content-card form-card">
+  <div class="card-heading"><div><span class="page-eyebrow">INPATIENT CARE</span><h2>Admit a patient</h2></div><span class="form-icon">▣</span></div>
+  <form method="post" class="data-form">
+    <label>Patient<select name="patient_uhid" required><option value="">Choose a patient</option>{% for p in patients %}<option value="{{ p.UHID }}">{{ p.Name }} · {{ p.UHID }}</option>{% endfor %}</select></label>
+    <label>Ward<select name="ward_id" required><option value="">Choose an available ward</option>{% for w in wards %}<option value="{{ w.Ward_ID }}">{{ w.Ward_Name }} · {{ w.Ward_Type }} · {{ w.Available_Beds }} beds free</option>{% endfor %}</select></label>
+    <label>Attendant name<input name="attendant_name" maxlength="100" required placeholder="Attendant full name"></label>
+    <label>Attendant phone<input name="attendant_phone" maxlength="15" required placeholder="Contact number"></label>
+    <div class="form-submit"><button class="button button-blue" type="submit">Confirm admission <span>→</span></button><small>Admission procedure checks capacity and updates the bed count.</small></div>
+  </form>
+</section>
+{% endif %}
+
+{% if kind == 'referrals' and can_create %}
+<section class="content-card form-card">
+  <div class="card-heading"><div><span class="page-eyebrow">NETWORK COORDINATION</span><h2>Create a referral</h2></div><span class="form-icon">⇄</span></div>
+  <form method="post" class="data-form">
+    <label>Patient<select name="patient_uhid" required><option value="">Choose a patient</option>{% for p in patients %}<option value="{{ p.UHID }}">{{ p.Name }} · {{ p.UHID }}</option>{% endfor %}</select></label>
+    <label>Destination branch<select name="dest_branch_id" required><option value="">Choose a branch</option>{% for b in branches %}<option value="{{ b.Branch_ID }}">{{ b.Branch_Name }}</option>{% endfor %}</select></label>
+    <label class="form-span">Referral reason<textarea name="reason" minlength="5" maxlength="255" required placeholder="Describe the reason for inter-branch referral"></textarea></label>
+    <div class="form-submit"><button class="button button-blue" type="submit">Create referral <span>→</span></button><small>Only doctors can initiate referrals in this prototype.</small></div>
+  </form>
+</section>
+{% endif %}
+
+{% if kind == 'prescriptions' and can_create %}
+<section class="content-card form-card">
+  <div class="card-heading"><div><span class="page-eyebrow">CLINICAL RECORDS</span><h2>Add a prescription</h2></div><span class="form-icon">✚</span></div>
+  <form method="post" class="data-form">
+    <label class="form-span">Appointment<select name="appt_id" required><option value="">Choose your appointment</option>{% for a in appointments %}<option value="{{ a.Appt_ID }}">#{{ a.Appt_ID }} · {{ a.Patient_Name }} · {{ a.Appt_Date }} · {{ a.Time_Slot }}</option>{% endfor %}</select></label>
+    <label>Medicine name<input name="medicine_name" maxlength="120" required placeholder="Medicine name"></label>
+    <label>Dosage<input name="dosage" maxlength="60" required placeholder="e.g. 1 tablet twice daily"></label>
+    <label class="form-span">Notes<textarea name="notes" maxlength="255" placeholder="Optional notes"></textarea></label>
+    <div class="form-submit"><button class="button button-blue" type="submit">Save prescription <span>→</span></button><small>Prescription must reference a non-cancelled appointment.</small></div>
+  </form>
+</section>
+{% endif %}
+
+<section class="content-card records-card">
+  <div class="records-toolbar"><div><span class="page-eyebrow">DATABASE RECORDS</span><h2>{{ 'Your records' if session.role == 'patient' else 'Record directory' }}</h2></div><div class="table-search"><span>⌕</span><input id="recordSearch" type="search" placeholder="Search visible records..."></div></div>
+  {% if rows %}
+  <div class="table-responsive"><table class="records-table" id="recordsTable">
+    <thead><tr>{% for key in rows[0].keys() %}<th>{{ key.replace('_',' ') }}</th>{% endfor %}{% if kind in ['appointments','admissions','referrals','billing'] %}<th>ACTION</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+      {% for key,value in r.items() %}
+        <td>
+          {% if key == 'Status' %}
+            <span class="status-pill status-{{ value|lower|replace(' ','-') }}">{{ value }}</span>
+          {% elif value is none %}
+            <span class="muted-dash">—</span>
+          {% else %}
+            {{ value }}
+          {% endif %}
+        </td>
+      {% endfor %}
+      {% if kind == 'appointments' %}
+        <td class="action-cell">
+          {% if r.Status == 'Scheduled' %}
+            {% if session.role in ['chain_admin','branch_admin','receptionist','doctor','patient'] %}
+            <form method="post" action="{{ url_for('main.cancel_appointment', appt_id=r.Appt_ID) }}" onsubmit="return confirm('Cancel this appointment?')"><button class="small-action action-danger" type="submit">Cancel</button></form>
+            {% endif %}
+            {% if session.role in ['chain_admin','branch_admin','receptionist','doctor'] %}
+            <form method="post" action="{{ url_for('main.complete_appointment', appt_id=r.Appt_ID) }}" onsubmit="return confirm('Mark this appointment completed?')"><button class="small-action action-success" type="submit">Complete</button></form>
+            {% endif %}
+          {% else %}<span class="muted-dash">No action</span>{% endif %}
+        </td>
+      {% elif kind == 'admissions' %}
+        <td class="action-cell">
+          {% if r.Discharge_Date is none and session.role in ['chain_admin','branch_admin','receptionist'] %}
+          <form method="post" action="{{ url_for('main.discharge_admission', admission_id=r.Admission_ID) }}" class="discharge-form" onsubmit="return confirm('Discharge patient and generate bill?')">
+            <input name="consultation_fee" type="number" step="0.01" min="0" value="500" aria-label="Consultation fee">
+            <input name="medicine_charges" type="number" step="0.01" min="0" value="0" aria-label="Medicine charges">
+            <button class="small-action action-success" type="submit">Discharge & bill</button>
+          </form>
+          {% else %}<span class="muted-dash">—</span>{% endif %}
+        </td>
+      {% elif kind == 'referrals' %}
+        <td class="action-cell">
+          {% if r.Status == 'Pending' and can_process %}
+          <div class="referral-actions">
+            <form method="post" action="{{ url_for('main.accept_referral', referral_id=r.Referral_ID) }}" class="referral-accept-form">
+              <select name="doctor_id" required aria-label="Destination doctor"><option value="">Doctor</option>{% for d in doctors if d.Branch_ID == r.Dest_Branch_ID %}<option value="{{ d.Staff_ID }}">{{ d.Name }}</option>{% endfor %}</select>
+              <input type="date" name="appt_date" required aria-label="Appointment date">
+              <select name="time_slot" required aria-label="OPD time"><option value="">Time</option>{% for t in ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','14:00','14:30','15:00','15:30','16:00','16:30'] %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select>
+              <button class="small-action action-success" type="submit">Accept</button>
+            </form>
+            <form method="post" action="{{ url_for('main.reject_referral', referral_id=r.Referral_ID) }}" onsubmit="return confirm('Reject this referral?')"><button class="small-action action-danger" type="submit">Reject</button></form>
+          </div>
+          {% else %}<span class="muted-dash">—</span>{% endif %}
+        </td>
+      {% elif kind == 'billing' %}
+        <td class="action-cell">
+          {% if r.Status == 'Unpaid' and session.role in ['chain_admin','branch_admin','receptionist'] %}
+          <form method="post" action="{{ url_for('main.mark_bill_paid', bill_id=r.Bill_ID) }}" onsubmit="return confirm('Mark bill as paid?')"><button class="small-action action-success" type="submit">Mark paid</button></form>
+          {% else %}<span class="muted-dash">—</span>{% endif %}
+        </td>
+      {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="empty-state"><span>◎</span><b>No records found</b><small>Records will appear here as workflows are completed.</small></div>
+  {% endif %}
+</section>
+{% endblock %}
