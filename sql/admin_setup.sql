@@ -1,0 +1,6 @@
+-- Run in Workbench as administrator. Database-scoped grants only.
+CREATE DATABASE IF NOT EXISTS aiims_connect CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+-- Existing aiims_app password is not modified by CREATE USER IF NOT EXISTS.
+CREATE USER IF NOT EXISTS 'aiims_app'@'localhost' IDENTIFIED BY 'CHANGE_ONLY_IF_CREATING_NEW_USER';
+GRANT SELECT,INSERT,UPDATE,DELETE,EXECUTE,CREATE,ALTER,INDEX,REFERENCES,CREATE VIEW,SHOW VIEW,TRIGGER,CREATE ROUTINE,ALTER ROUTINE ON aiims_connect.* TO 'aiims_app'@'localhost';
+FLUSH PRIVILEGES;
