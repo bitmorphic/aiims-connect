@@ -1,0 +1,8 @@
+[tools]
+python = "3.12.8"
+
+[settings]
+# The selected Python 3.12.8 binary has no GitHub artifact attestation
+# published for Mise to verify. Keep Python pinned and disable only this
+# optional attestation check.
+python.github_attestations = false
