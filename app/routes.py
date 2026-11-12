@@ -156,7 +156,7 @@ def referrals():
         except Exception as e: c.rollback(); flash(str(e),'danger')
         finally: cur.close(); c.close()
         return redirect(url_for('main.referrals'))
-    sql="SELECT r.Referral_ID,p.Name Patient,f.Branch_Name From_Branch,t.Branch_Name To_Branch,r.Reason,r.Status,r.Created_At FROM referral r JOIN patient p ON p.UHID=r.UHID JOIN branch f ON f.Branch_ID=r.From_Branch_ID JOIN branch t ON t.Branch_ID=r.To_Branch_ID"
+    sql="SELECT r.Referral_ID,r.To_Branch_ID,p.Name Patient,f.Branch_Name From_Branch,t.Branch_Name To_Branch,r.Reason,r.Status,r.Created_At FROM referral r JOIN patient p ON p.UHID=r.UHID JOIN branch f ON f.Branch_ID=r.From_Branch_ID JOIN branch t ON t.Branch_ID=r.To_Branch_ID"
     args=()
     if role=='patient': sql+=" WHERE r.UHID=%s"; args=(session['uhid'],)
     elif role=='doctor': sql+=" WHERE r.Created_By_Staff_ID=%s"; args=(session['staff_id'],)
