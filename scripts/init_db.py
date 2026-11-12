@@ -1,35 +1,58 @@
-from pathlib import Path
-import os,sys
-from dotenv import load_dotenv
-import mysql.connector
-ROOT=Path(__file__).resolve().parents[1];load_dotenv(ROOT/'.env')
-def split_sql(text):
-    delim=';';buf=[];out=[]
-    for line in text.splitlines():
-        s=line.strip()
-        if not s or s.startswith('--') or s.startswith('#'):continue
-        if s.upper().startswith('DELIMITER '):delim=s.split(None,1)[1];continue
-        buf.append(line);joined='\n'.join(buf).rstrip()
-        if joined.endswith(delim):
-            stmt=joined[:-len(delim)].strip()
-            if stmt:out.append(stmt)
-            buf=[]
-    if '\n'.join(buf).strip():out.append('\n'.join(buf).strip())
-    return out
+"""Read-only verification of the existing AIIMS Connect schema."""
+from app.db import connect
+
+EXPECTED = {
+    "tables": {"admin_staff","admission","appointment","audit_log","billing","branch",
+               "department","doctor","login","patient","prescription","receptionist",
+               "referral","staff","ward"},
+    "views": {"branch_revenue_view","branch_ward_view","chain_occupancy_view",
+              "doctor_schedule_view","patient_history_view","patient_self_view",
+              "referral_flow_view"},
+    "procedures": {"AcceptReferral","AdmitPatient","BookAppointment","CancelAppointment",
+                   "CompleteAppointment","CreatePrescription","DischargePatient",
+                   "GenerateBill","MarkBillPaid","RegisterPatient","RejectReferral"},
+    "triggers": {"trg_admission_capacity_bi","trg_admission_discharge_bu",
+                 "trg_appt_doctor_branch_bi","trg_appt_doctor_branch_bu",
+                 "trg_bill_audit_ai","trg_bill_audit_au",
+                 "trg_login_role_consistency_bi","trg_login_role_consistency_bu",
+                 "trg_rx_audit_ai","trg_rx_audit_au","trg_ref_initiator_branch_bi",
+                 "trg_ref_audit_ai","trg_ref_initiator_branch_bu","trg_ref_audit_au"},
+}
+
+
 def main():
-    cfg=dict(host=os.getenv('DB_HOST','localhost'),port=int(os.getenv('DB_PORT','3306')),user=os.getenv('DB_USER','aiims_app'),password=os.getenv('DB_PASSWORD',''),database=os.getenv('DB_NAME','aiims_connect'))
-    if not cfg['password']:sys.exit('DB_PASSWORD missing from .env')
-    cn=mysql.connector.connect(**cfg);cur=cn.cursor()
+    cn = connect()
+    cur = cn.cursor()
     try:
-        cur.execute('SELECT VERSION(),CURRENT_USER(),DATABASE()');print('Connected:',cur.fetchone())
-        for name in ['schema.sql','triggers.sql','procedures.sql','views.sql','seed.sql']:
-            stmts=split_sql((ROOT/'sql'/name).read_text(encoding='utf-8'));print(name,len(stmts),'statements')
-            for i,stmt in enumerate(stmts,1):
-                try:cur.execute(stmt)
-                except Exception as e:
-                    cn.rollback();raise RuntimeError(f'{name} statement {i}/{len(stmts)} failed: {e}\\n{stmt[:250]}')
-            cn.commit()
-        cur.execute('SHOW TABLES');print('Tables:',[x[0] for x in cur.fetchall()])
-        print('Initialization completed.')
-    finally:cur.close();cn.close()
-if __name__=='__main__':main()
+        cur.execute("SELECT DATABASE(),VERSION()")
+        db, version = cur.fetchone()
+        cur.execute("SELECT TABLE_NAME,TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()")
+        objects = cur.fetchall()
+        actual = {
+            "tables": {n for n,t in objects if t == "BASE TABLE"},
+            "views": {n for n,t in objects if t == "VIEW"},
+        }
+        cur.execute("SELECT ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA=DATABASE() AND ROUTINE_TYPE='PROCEDURE'")
+        actual["procedures"] = {r[0] for r in cur.fetchall()}
+        cur.execute("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE()")
+        actual["triggers"] = {r[0] for r in cur.fetchall()}
+        print("Database:", db, "| MySQL:", version)
+        failed = False
+        for kind, expected in EXPECTED.items():
+            missing = sorted(expected - actual[kind])
+            print(kind, len(actual[kind]), "found;", len(expected), "expected")
+            if missing:
+                failed = True
+                print("Missing:", ", ".join(missing))
+        if failed:
+            print("Verification failed. No database object was changed.")
+            return 1
+        print("Schema verification passed. Read-only check complete.")
+        return 0
+    finally:
+        cur.close()
+        cn.close()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
