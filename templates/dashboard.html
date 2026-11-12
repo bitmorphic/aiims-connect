@@ -59,7 +59,7 @@
 </div>
 
 <script>
-const branchRows = {{ branches|tojson }};
+const branchRows = {{ chart_branches|tojson }};
 const chartNode = document.getElementById('occupancyChart');
 if (chartNode && branchRows.length) {
   new Chart(chartNode, {

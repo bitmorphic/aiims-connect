@@ -289,7 +289,20 @@ def dashboard():
         "admissions": admissions_count,
         "referrals": referrals_count,
     }
-    return render_template("dashboard.html", stats=stats, branches=branches, recent=recent)
+    # MySQL DECIMAL values are converted before Jinja's JSON encoder sees them.
+    chart_branches = [
+        {
+            "Branch_Name": row["Branch_Name"],
+            "Total_Beds": int(row["Total_Beds"] or 0),
+            "Available_Beds": int(row["Available_Beds"] or 0),
+            "Occupancy_Pct": float(row["Occupancy_Pct"] or 0),
+        }
+        for row in branches
+    ]
+    return render_template(
+        "dashboard.html", stats=stats, branches=branches,
+        chart_branches=chart_branches, recent=recent
+    )
 
 
 @bp.route("/patients", methods=["GET", "POST"])
@@ -340,6 +353,15 @@ def patients():
         if role == "doctor":
             sql += " WHERE EXISTS (SELECT 1 FROM appointment ap WHERE ap.Patient_UHID=p.UHID AND ap.Doctor_ID=%s)"
             params = (session["staff_id"],)
+        elif role in ("branch_admin", "receptionist"):
+            sql += """ WHERE EXISTS (
+                          SELECT 1 FROM appointment ap
+                          WHERE ap.Patient_UHID=p.UHID AND ap.Branch_ID=%s
+                        ) OR EXISTS (
+                          SELECT 1 FROM admission ad JOIN ward w ON w.Ward_ID=ad.Ward_ID
+                          WHERE ad.Patient_UHID=p.UHID AND w.Branch_ID=%s
+                        )"""
+            params = (branch_id(), branch_id())
         if q:
             sql += (" AND " if params else " WHERE ") + "(p.UHID LIKE %s OR p.Name LIKE %s OR p.Phone LIKE %s)"
             params += (f"%{q}%", f"%{q}%", f"%{q}%")
@@ -387,12 +409,15 @@ def appointments():
     patients_list = []
     if role in ("chain_admin", "branch_admin", "receptionist"):
         patients_list = _safe_query("SELECT UHID,Name FROM patient ORDER BY Name LIMIT 250")
-    doctors = _safe_query(
-        """SELECT d.Staff_ID,s.Name,d.Specialization,s.Branch_ID,b.Branch_Name
-           FROM doctor d JOIN staff s ON s.Staff_ID=d.Staff_ID
-           JOIN branch b ON b.Branch_ID=s.Branch_ID
-           ORDER BY b.Branch_Name,s.Name"""
-    )
+    doctor_sql = """SELECT d.Staff_ID,s.Name,d.Specialization,s.Branch_ID,b.Branch_Name
+                    FROM doctor d JOIN staff s ON s.Staff_ID=d.Staff_ID
+                    JOIN branch b ON b.Branch_ID=s.Branch_ID"""
+    doctor_params = ()
+    if role in ("branch_admin", "receptionist"):
+        doctor_sql += " WHERE s.Branch_ID=%s"
+        doctor_params = (branch_id(),)
+    doctor_sql += " ORDER BY b.Branch_Name,s.Name"
+    doctors = _safe_query(doctor_sql, doctor_params)
     return render_template(
         "table.html", title="Appointments", eyebrow="OUTPATIENT DEPARTMENT",
         subtitle="Book and manage OPD visits with database-enforced slot and token rules.",
@@ -671,6 +696,13 @@ def prescriptions():
         if role != "doctor":
             abort(403)
         appt_id = request.form.get("appt_id")
+        assigned = _safe_one(
+            "SELECT 1 AS allowed FROM appointment WHERE Appt_ID=%s AND Doctor_ID=%s AND Status<>'Cancelled'",
+            (appt_id, session["staff_id"]),
+        )
+        if not assigned:
+            flash("You can only prescribe for your own non-cancelled appointments.", "danger")
+            return redirect(url_for("main.prescriptions"))
         try:
             prescription_id = call_procedure(
                 "CreatePrescription",
