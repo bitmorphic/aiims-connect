@@ -36,3 +36,7 @@ Thumbs.db
 *.log
 *.sql.gz
 *.dump
+
+# Local database schema exports (generated locally, not source files)
+/aiims_connect_structure.sql
+/aiims_connect_railway_schema.sql
