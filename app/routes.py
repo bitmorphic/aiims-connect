@@ -353,15 +353,8 @@ def patients():
         if role == "doctor":
             sql += " WHERE EXISTS (SELECT 1 FROM appointment ap WHERE ap.Patient_UHID=p.UHID AND ap.Doctor_ID=%s)"
             params = (session["staff_id"],)
-        elif role in ("branch_admin", "receptionist"):
-            sql += """ WHERE EXISTS (
-                          SELECT 1 FROM appointment ap
-                          WHERE ap.Patient_UHID=p.UHID AND ap.Branch_ID=%s
-                        ) OR EXISTS (
-                          SELECT 1 FROM admission ad JOIN ward w ON w.Ward_ID=ad.Ward_ID
-                          WHERE ad.Patient_UHID=p.UHID AND w.Branch_ID=%s
-                        )"""
-            params = (branch_id(), branch_id())
+        # Patient UHIDs are chain-wide; branch staff use the shared registry so a
+        # newly registered patient is immediately findable before the first visit.
         if q:
             sql += (" AND " if params else " WHERE ") + "(p.UHID LIKE %s OR p.Name LIKE %s OR p.Phone LIKE %s)"
             params += (f"%{q}%", f"%{q}%", f"%{q}%")
@@ -390,6 +383,13 @@ def appointments():
         if not patient_uhid or not doctor_id or not appt_date or not _time_slot_is_valid(time_slot):
             flash("Choose a patient, doctor, future date and a valid 30-minute OPD slot.", "warning")
             return redirect(url_for("main.appointments"))
+        if role in ("branch_admin", "receptionist"):
+            doctor_branch = _safe_one(
+                "SELECT Branch_ID FROM staff WHERE Staff_ID=%s AND Staff_Type='Doctor'",
+                (doctor_id,),
+            )
+            if not doctor_branch or doctor_branch["Branch_ID"] != branch_id():
+                abort(403)
         try:
             appt_id = call_procedure(
                 "BookAppointment",
