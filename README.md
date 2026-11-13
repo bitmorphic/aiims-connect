@@ -65,6 +65,7 @@ The ER diagram below represents the current 15-entity schema.
   <img src="tests/er-diagram.png" alt="ER DIAGRAM">
   <br><br>
 </div>
+
 ### DBMS objects
 
 | Database object | Count | Purpose |
