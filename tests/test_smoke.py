@@ -38,6 +38,15 @@ class RepositorySmokeTests(unittest.TestCase):
         self.assertNotIn("CREATE TABLE", verifier.upper())
         self.assertNotIn("DROP TABLE", verifier.upper())
 
+
+    def test_portable_schema_contains_expected_objects(self):
+        schema = self.read("sql", "schema.sql")
+        self.assertEqual(schema.count("CREATE TABLE "), 15)
+        self.assertEqual(schema.count("CREATE TRIGGER "), 14)
+        self.assertEqual(schema.count("CREATE PROCEDURE "), 11)
+        self.assertEqual(schema.count("CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW "), 7)
+        self.assertNotRegex(schema, r"(?im)^\s*(DROP|USE)\b")
+
     def test_railway_bootstrap_generator_and_demo_previewer_exist(self):
         self.assertTrue((ROOT / "scripts" / "prepare_railway_schema.py").exists())
         seeder = self.read("scripts", "seed_demo.py")

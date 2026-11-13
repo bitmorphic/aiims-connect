@@ -4,6 +4,7 @@
   <p>An academic multi-branch hospital management system built around a chain-wide patient identity and branch-specific care records.</p>
 </div>
 
+> **Academic prototype notice:** AIIMS Connect is an independent student project. It is not affiliated with, endorsed by, or an official system of AIIMS or the Government of India. It is not certified or validated for clinical use. Use synthetic demonstration data only; never enter real patient information.
 
 ## Project overview
 
@@ -81,15 +82,15 @@ The seven views in the current schema are `branch_revenue_view`, `branch_ward_vi
 | Concept | How it is used in the project |
 | --- | --- |
 | Relational modelling | Primary keys, foreign keys and branch-aware relationships connect the network data. |
-| EER specialisation | Staff subtypes and the patient-care model are represented in the design. |
+| EER specialisation | The current schema models Staff subtypes as Doctor, Receptionist and Admin Staff. The Patient OPD/IPD subtypes from the original synopsis are not part of the implemented 15-table schema. |
 | Normalisation | The schema separates patient, staff, login, branch and care-event data to reduce duplication. |
 | Transactions | Multi-step operations are grouped so related changes can commit or roll back together. |
 | Concurrency control | Database locking and uniqueness rules protect shared resources such as doctor time slots and ward capacity. |
 | Constraints and indexes | Key, check and uniqueness rules protect records and support common searches. |
 | Views | Provide reusable patient, schedule, ward, occupancy, referral and revenue summaries. |
 | Stored procedures and triggers | Keep important workflow and record-maintenance logic close to the data. |
-| Security | Password hashing, role-aware access and audit records are included in the application/database design. |
-| SQL operations | The project uses DDL, DML, DCL and TCL, including joins, subqueries, aggregate queries, `COMMIT` and `ROLLBACK`. |
+| Security | Passwords are verified with bcrypt, Flask routes enforce role and branch checks, and triggers record selected sensitive changes in `AUDIT_LOG`. This is academic access control, not a production security certification. |
+| SQL operations | The project uses DDL and DML, joins, aggregate queries, constraints, indexes and transactional procedures with `COMMIT`/`ROLLBACK`. Application access is enforced through Flask role checks and scoped queries; a separate MySQL `GRANT`/`REVOKE` role layer is not claimed. |
 
 ## Technology stack
 
@@ -131,6 +132,8 @@ aiims-connect/
 │   ├── prepare_railway_schema.py
 │   └── seed_demo.py
 ├── sql/
+│   ├── README.md
+│   └── schema.sql
 ├── static/
 │   ├── app.js
 │   └── style.css
@@ -181,15 +184,19 @@ notepad .env
 
 Set the database host, port, database name and credentials for your local MySQL instance, and place the generated random value in `FLASK_SECRET_KEY`. Keep `.env` private and never commit it. Use a least-privilege MySQL account for application access; do not expose a local root account to the public web.
 
-### 4. Verify the existing database
+### 4. Create the schema (new database only)
+
+In MySQL Workbench, create an empty database named `aiims_connect`, select it, and execute [`sql/schema.sql`](sql/schema.sql) once. The file contains database objects only; it does not insert demo or patient rows. **Never run it against an existing or populated database.**
+
+### 5. Verify the database
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\init_db.py
 ```
 
-This is a read-only schema check. It expects the existing AIIMS Connect schema, including the tables, views, procedures and triggers described above. It does not create, drop, seed or migrate database objects.
+This is a read-only schema check. It verifies the expected tables, views, procedures and triggers. It does not create, drop, seed or migrate database objects.
 
-### 5. Optional: preview synthetic demo data
+### 6. Optional: preview synthetic demo data
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\seed_demo.py
@@ -203,7 +210,7 @@ The default is preview-only. Review the proposed changes before applying them. T
 
 Run the seeder only against a database containing synthetic demonstration/test records. It is not a migration utility and must never be applied to real patient data.
 
-### 6. Start the application
+### 7. Start the application
 
 ```powershell
 .\.venv\Scripts\python.exe run.py
@@ -232,17 +239,12 @@ COOKIE_SECURE=1
 
 To bootstrap a **new, empty** Railway database:
 
-1. Start with a structure-only export from the intended MySQL schema.
-2. Generate a Railway-safe schema file:
-
-   ```powershell
-   py -3.12 scripts\prepare_railway_schema.py aiims_connect_structure.sql aiims_connect_railway_schema.sql
-   ```
-
-3. Import the generated CREATE-only bootstrap into the new, empty Railway schema using MySQL Workbench and the Railway MySQL TCP Proxy.
+1. Connect MySQL Workbench to the Railway MySQL TCP Proxy.
+2. Select the empty target database (normally Railway's provisioned `railway` schema).
+3. Execute [`sql/schema.sql`](sql/schema.sql) once. It has no hard-coded `USE` statement, no row inserts and no `DROP` statements.
 4. Verify the schema using `scripts/init_db.py`, then deploy the Flask service.
 
-The structure bootstrap does not migrate local rows. Do not import it into a populated database. The public web service should use Railway's private network connection; Workbench can use the database TCP Proxy. See [`sql/README.md`](sql/README.md) for the database deployment notes.
+The bootstrap creates database objects only; it does not migrate local rows or seed demo accounts. Never run it against a populated database. The public web service should use Railway's private network connection; Workbench can use the database TCP Proxy. The optional `scripts/prepare_railway_schema.py` can regenerate a bootstrap from a different structure-only MySQL dump. See [`sql/README.md`](sql/README.md) for the database deployment notes.
 
 ## Demonstration workflow
 
@@ -273,7 +275,8 @@ The smoke tests do not replace integration testing against MySQL. Concurrency, r
 - This is a DBMS academic prototype, not a production hospital information system.
 - It has not undergone clinical validation, formal security assessment, regulatory review or production-scale load testing.
 - Do not enter actual patient names, contact details, UHIDs, diagnoses, prescriptions, medical histories or payment information.
-- Features in the original case-study scope that are not implemented in the current web application should be treated as future work, not as available functions.
+- Features in the original case-study scope that are not implemented in the current web application should be treated as future work, not as available functions. This includes the Nurse role, blood-bank workflows, branch/department/staff administration screens and Patient OPD/IPD subtype tables.
+- The current login flow does not implement the synopsis' failed-login account lockout. The Flask permanent session lifetime is configured for 45 minutes (not the proposed 15 minutes), and current forms do not include CSRF tokens. Do not treat the prototype as ready for production or real patient use.
 - The Railway demo may be unavailable or reset as hosting and demonstration data change.
 
 ## Project team
