@@ -1,68 +1,21 @@
 {% extends "base.html" %}
-{% block title %}AIIMS Connect | One Patient. One ID. Every Branch.{% endblock %}
+{% block title %}AIIMS Connect{% endblock %}
 {% block content %}
-<div class="landing-shell">
-  <nav class="site-nav" aria-label="Public navigation">
+<div class="minimal-landing">
+  <header class="minimal-public-header">
     <a class="site-brand" href="{{ url_for('main.home') }}">
       <span class="brand-mark">+</span>
       <span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span>
     </a>
-    <div class="site-nav-links">
-      <a href="#network">Network</a>
-      <a href="#platform">Platform</a>
-      <a href="#workflow">Workflow</a>
-    </div>
-    <a class="button button-light nav-cta" href="{{ url_for('main.login') }}">Open workspace</a>
-  </nav>
-
-  <main class="public-page">
-    <div class="simple-divider" aria-hidden="true"><span>◆ ◆ ◆</span></div>
-
-    <section class="landing-intro">
-      <p class="landing-eyebrow">MULTI-BRANCH HOSPITAL MANAGEMENT</p>
-      <h1>One patient. One ID.<br><span>Every branch.</span></h1>
-      <p class="landing-description">A simple, connected workspace for patient registration, OPD appointments, admissions, prescriptions, billing and referrals across hospital branches.</p>
-      <a class="button button-blue" href="{{ url_for('main.login') }}">Sign in to the workspace</a>
-    </section>
-
-    <section class="landing-section" id="network">
-      <h2>Network overview</h2>
-      <p class="section-description">One shared patient identity across the connected branches.</p>
-      <div class="landing-stats">
-        <div><strong>{{ stats.branches }}</strong><span>Branches</span></div>
-        <div><strong>{{ stats.departments }}</strong><span>Departments</span></div>
-        <div><strong>{{ stats.doctors }}</strong><span>Doctors</span></div>
-        <div><strong>{{ stats.wards }}</strong><span>Wards and units</span></div>
-      </div>
-    </section>
-
-    <section class="landing-section" id="platform">
-      <h2>What the system supports</h2>
-      <div class="landing-cards">
-        <article class="landing-card"><h3>Patient records</h3><p>Register patients and use a unique UHID to connect their records across branches.</p></article>
-        <article class="landing-card"><h3>OPD appointments</h3><p>Book doctor appointments with database-managed slots and token numbers.</p></article>
-        <article class="landing-card"><h3>Admissions and billing</h3><p>Track ward capacity, discharge patients and generate linked bills.</p></article>
-        <article class="landing-card"><h3>Branch referrals</h3><p>Refer a patient to another branch and create the receiving appointment.</p></article>
-      </div>
-    </section>
-
-    <section class="landing-section" id="workflow">
-      <h2>Connected workflow</h2>
-      <ol class="workflow-list">
-        <li><b>Register</b><span>Create a patient record and UHID.</span></li>
-        <li><b>Schedule</b><span>Book an OPD appointment with a doctor.</span></li>
-        <li><b>Coordinate</b><span>Save prescriptions and inter-branch referrals.</span></li>
-        <li><b>Admit and discharge</b><span>Update bed availability and generate bills.</span></li>
-      </ol>
-    </section>
-
-    <footer class="simple-footer">
-      <a class="site-brand" href="{{ url_for('main.home') }}">
-        <span class="brand-mark">+</span>
-        <span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span>
-      </a>
-      <p>Independent academic prototype. Not affiliated with AIIMS or the Government of India. Uses synthetic demonstration data.</p>
-    </footer>
+    <a class="button button-blue" href="{{ url_for('main.login') }}">Sign in</a>
+  </header>
+  <main class="minimal-public-main">
+    <h1>AIIMS Connect</h1>
+    <p class="lead">A multi-branch hospital management system built as an academic DBMS project.</p>
+    <p>Manage patient records, appointments, admissions, prescriptions, referrals and billing through one MySQL database.</p>
+    <a class="button button-blue" href="{{ url_for('main.login') }}">Open workspace</a>
+    <p class="project-note">Independent academic prototype. Not affiliated with AIIMS or the Government of India. Uses synthetic demonstration data.</p>
   </main>
+  <footer class="minimal-public-footer">AIIMS Connect · Hospital Management System</footer>
 </div>
 {% endblock %}
