@@ -4,7 +4,7 @@ The repository includes [schema.sql](schema.sql), a portable, structure-only boo
 
 ## Schema inventory
 
-- 15 InnoDB tables
+- 15 tables
 - 7 views
 - 11 stored procedures
 - 14 triggers
