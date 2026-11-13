@@ -2,15 +2,14 @@
 {% block title %}Sign in | AIIMS Connect{% endblock %}
 {% block content %}
 <div class="login-page">
-  <a class="login-back" href="{{ url_for('main.home') }}">← Back to overview</a>
+  <a class="login-back" href="{{ url_for('main.home') }}">← Back to home</a>
   <section class="simple-login-card">
     <a class="site-brand login-brand" href="{{ url_for('main.home') }}">
       <span class="brand-mark">+</span>
       <span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span>
     </a>
-    <div class="login-card-mark">+</div>
     <p class="login-kicker">HOSPITAL NETWORK WORKSPACE</p>
-    <h1>Sign in to AIIMS Connect</h1>
+    <h1>Sign in</h1>
     <p class="login-hint">Use the account provided by your hospital administrator.</p>
     <form method="post" class="login-form">
       <label for="username">Username</label>
