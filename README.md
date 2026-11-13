@@ -4,7 +4,6 @@
   <p>An academic multi-branch hospital management system built around a chain-wide patient identity and branch-specific care records.</p>
 </div>
 
-> **Academic prototype notice:** AIIMS Connect is an independent student project inspired by the multi-branch hospital use case. It is **not affiliated with, endorsed by, or an official system of AIIMS or the Government of India**. It is not certified or validated for clinical use. Use synthetic demonstration data only; never enter real patient information.
 
 ## Project overview
 
