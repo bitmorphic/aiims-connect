@@ -92,8 +92,6 @@ The seven views in the current schema are `branch_revenue_view`, `branch_ward_vi
 | Security | Password hashing, role-aware access and audit records are included in the application/database design. |
 | SQL operations | The project uses DDL, DML, DCL and TCL, including joins, subqueries, aggregate queries, `COMMIT` and `ROLLBACK`. |
 
-More details are available in [`docs/database-design.md`](docs/database-design.md), [`docs/dbms-demonstrations.md`](docs/dbms-demonstrations.md) and [`docs/viva-questions.md`](docs/viva-questions.md).
-
 ## Technology stack
 
 | Layer | Technology |
@@ -129,13 +127,6 @@ aiims-connect/
 │   ├── __init__.py
 │   ├── db.py
 │   └── routes.py
-├── docs/
-│   ├── api.md
-│   ├── database-design.md
-│   ├── dbms-demonstrations.md
-│   ├── professor-demo-runbook.md
-│   ├── test-plan.md
-│   └── viva-questions.md
 ├── scripts/
 │   ├── init_db.py
 │   ├── prepare_railway_schema.py
@@ -266,7 +257,7 @@ A typical end-to-end demonstration follows this sequence:
 6. Create a referral to another branch, accept it at the destination, and verify the appointment created for that branch.
 7. Review branch occupancy and revenue in the reporting workspace.
 
-These workflows were exercised against the hosted demo database during project validation using synthetic records. For the detailed walkthrough and verification queries, see [`docs/professor-demo-runbook.md`](docs/professor-demo-runbook.md).
+These workflows were exercised against the hosted demo database during project validation using synthetic records.
 
 ### Tests
 
@@ -276,7 +267,7 @@ Run the repository smoke tests with:
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-The smoke tests do not replace integration testing against MySQL. Concurrency, rollback and access-boundary checks should be run against the target database before any formal demonstration; see [`docs/test-plan.md`](docs/test-plan.md).
+The smoke tests do not replace integration testing against MySQL. Concurrency, rollback and access-boundary checks should be run against the target database before any formal demonstration.
 
 ## Limitations and responsible use
 
