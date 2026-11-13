@@ -796,3 +796,23 @@ select:focus-visible, textarea:focus-visible {
   .minimal-public-header { padding: 0 15px; }
   .minimal-public-main, .minimal-public-footer { width: calc(100% - 30px); }
 }
+
+
+/* Keep the simplified sign-in card centered on the original blue background. */
+.login-page {
+  min-height: 100vh;
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #eff3f8;
+}
+.login-back {
+  width: min(430px, 100%);
+  margin: 0;
+  color: #52677f;
+  font-size: 13px;
+}
+.simple-login-card { margin: 0 auto; }
