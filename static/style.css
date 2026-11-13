@@ -436,3 +436,302 @@ button,input,select,textarea { font: inherit; }
   .quick-actions { grid-template-columns: 1fr; }
   .discharge-form { min-width: 220px; }
 }
+
+
+/* ------------------------------------------------------------------
+   Readability refresh — simpler surfaces, stronger type and contrast
+   Keeps the existing AIIMS Connect layout and blue/navy identity.
+   ------------------------------------------------------------------ */
+:root {
+  --ink: #172b45;
+  --ink-soft: #3d526c;
+  --muted: #64758a;
+  --line: #dce4ee;
+  --paper: #f7f9fc;
+  --blue: #245fc4;
+  --blue-deep: #194d9e;
+  --blue-pale: #edf3fc;
+  --navy: #142d4b;
+  --navy-deep: #10243d;
+  --shadow: 0 2px 8px rgba(20, 43, 76, .04);
+}
+
+body {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+button, input, select, textarea {
+  font-size: 14px;
+}
+
+.button {
+  min-height: 42px;
+  padding: 11px 17px;
+  border-radius: 7px;
+  font-size: 14px;
+  box-shadow: none;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.button:hover { transform: none; }
+.button-blue { background: var(--blue); box-shadow: none; }
+.button-blue:hover { background: var(--blue-deep); box-shadow: none; }
+.button-dark { background: var(--navy); box-shadow: none; }
+.brand-mark {
+  border-radius: 8px;
+  background: var(--blue);
+  box-shadow: none;
+}
+
+/* Public pages: less ornamental, easier-to-read supporting text. */
+.site-nav { padding-top: 19px; padding-bottom: 19px; }
+.site-nav-links a, .text-link { font-size: 14px; }
+.hero-copy h1 { letter-spacing: -2.4px; }
+.hero-description { color: #52657d; font-size: 17px; line-height: 1.65; }
+.eyebrow, .page-eyebrow, .feature-kicker, .form-eyebrow {
+  color: #526982;
+  font-size: 11px;
+  letter-spacing: .7px;
+}
+.hero-visual {
+  border-radius: 14px;
+  background: #edf3fb;
+  box-shadow: none;
+}
+.visual-glow, .visual-orbit { opacity: .45; }
+.metrics-strip, .feature-card, .closing-cta {
+  border-radius: 10px;
+  box-shadow: none;
+}
+.feature-card p, .workflow-left p, .section-heading p {
+  color: #52657d;
+  font-size: 15px;
+  line-height: 1.65;
+}
+.feature-card h3 { font-size: 23px; }
+.feature-kicker { color: #536b86; }
+.workflow-step b { font-size: 15px; }
+.workflow-step small { color: #5f7188; font-size: 13px; }
+.site-footer > span { font-size: 12px; }
+.site-footer > small { color: #65758a; font-size: 11px; }
+
+/* Login: clearer form labels, fields and helper text. */
+.login-layout { border-radius: 12px; box-shadow: 0 8px 28px rgba(20,43,76,.07); }
+.login-form-side { padding: 48px; }
+.login-card h2 { font-size: 34px; letter-spacing: -.8px; }
+.login-hint { color: #5d6f85; font-size: 15px; }
+.login-form label { color: #344a64; font-size: 14px; }
+.login-form input {
+  height: 49px;
+  color: #1d3552;
+  background: #fff;
+  font-size: 15px;
+}
+.login-security { color: #4e6178; font-size: 12px; }
+.login-disclaimer { color: #65758a; font-size: 12px; }
+
+/* Authenticated workspace: simple white surfaces and readable navigation. */
+.app-body { background: #f6f8fb; }
+.app-topbar {
+  height: 68px;
+  padding: 0 26px;
+  background: #fff;
+  backdrop-filter: none;
+}
+.app-brand { font-size: 17px; }
+.app-brand small { color: #64758a; font-size: 9px; letter-spacing: .9px; }
+.topbar-context { color: #53677f; font-size: 13px; }
+.user-chip { color: #263d59; font-size: 14px; }
+.user-avatar { width: 32px; height: 32px; font-size: 13px; }
+.topbar-logout { padding: 9px 13px; font-size: 13px; }
+.app-layout { grid-template-columns: 238px minmax(0, 1fr); }
+.app-sidebar {
+  padding: 22px 13px 18px;
+  background: #fff;
+}
+.sidebar-label {
+  margin: 17px 12px 8px;
+  color: #667991;
+  font-size: 10px;
+  letter-spacing: .8px;
+}
+.side-link {
+  min-height: 43px;
+  gap: 11px;
+  color: #435972;
+  font-size: 14px;
+  font-weight: 600;
+}
+.side-link span { font-size: 16px; }
+.side-link.active {
+  color: #174f9f;
+  background: #edf3fc;
+  font-weight: 700;
+}
+.sidebar-status { color: #53677f; font-size: 12px; }
+.sidebar-tagline { color: #52677f; font-size: 17px; }
+.app-main { padding: 30px clamp(20px, 2.6vw, 42px) 48px; }
+
+.page-heading { margin-bottom: 22px; }
+.page-eyebrow { color: #5a7089; font-size: 11px; letter-spacing: .8px; }
+.page-heading h1 {
+  margin: 8px 0 6px;
+  color: #142d4b;
+  font-size: clamp(28px, 2.6vw, 35px);
+  line-height: 1.2;
+  letter-spacing: -.9px;
+}
+.page-heading p { color: #596c83; font-size: 15px; }
+.heading-date, .table-count { color: #52677f; font-size: 13px; }
+.table-count { padding: 10px 14px; border-radius: 7px; }
+.table-count b { font-size: 18px; }
+.table-count small { font-size: 12px; }
+
+/* Dashboard cards and data labels. */
+.stats-grid { gap: 14px; }
+.stat-card, .content-card {
+  border: 1px solid #dfe6ef;
+  border-radius: 9px;
+  box-shadow: none;
+}
+.stat-card { min-height: 145px; padding: 18px 19px; }
+.stat-blue { background: #fff; border-color: #dfe6ef; }
+.stat-accent { display: none; }
+.stat-top {
+  color: #52677f;
+  font-size: 11px;
+  letter-spacing: .55px;
+}
+.stat-top i { width: 30px; height: 30px; font-size: 16px; }
+.stat-card strong { margin-top: 10px; font-size: 34px; }
+.stat-card small { color: #5d7087; font-size: 13px; }
+.branch-card, .recent-card, .reports-grid .content-card { padding: 22px; }
+.card-heading h2, .records-toolbar h2, .quick-actions h2 {
+  color: #183451;
+  font-size: 20px;
+  letter-spacing: -.35px;
+}
+.card-heading a { font-size: 13px; }
+.card-note { color: #5f7187; font-size: 12px; }
+.branch-name b, .branch-bed-count b, .recent-info b { color: #263e59; font-size: 13px; }
+.branch-name small, .branch-bed-count small, .recent-info small {
+  color: #60738a;
+  font-size: 11px;
+}
+.branch-bed-count b { font-size: 13px; }
+.occupancy-value { color: #455b74; font-size: 12px; }
+.recent-info b { font-size: 13px; }
+.recent-info small { font-size: 11px; }
+.status-pill { padding: 5px 9px; font-size: 11px; }
+.quick-actions > a {
+  border-color: #dfe6ef;
+  border-radius: 8px;
+  box-shadow: none;
+}
+.quick-actions > a:hover { transform: none; box-shadow: none; background: #fbfcfe; }
+.quick-actions b { color: #263e59; font-size: 13px; }
+.quick-actions small { color: #5f7187; font-size: 11px; }
+
+/* Forms: larger labels and comfortable input targets. */
+.form-card, .records-card { padding: 22px; }
+.form-card { border: 1px solid #dfe6ef; border-radius: 9px; }
+.form-icon { border-radius: 8px; }
+.data-form { gap: 16px; }
+.data-form label {
+  color: #344b66;
+  font-size: 14px;
+  font-weight: 600;
+}
+.data-form input, .data-form select, .data-form textarea {
+  min-height: 46px;
+  margin-top: 7px;
+  padding: 10px 12px;
+  border-color: #cfd9e6;
+  border-radius: 6px;
+  color: #233b58;
+  background: #fff;
+  font-size: 14px;
+}
+.data-form textarea { min-height: 90px; }
+.data-form input::placeholder, .data-form textarea::placeholder { color: #75869a; }
+.form-submit .button { min-height: 42px; padding: 11px 16px; font-size: 14px; }
+.form-submit small { color: #5d7087; font-size: 12px; }
+.flash-message { padding: 13px 16px; border-radius: 7px; font-size: 14px; }
+
+/* Tables: readable headers and rows, with horizontal scrolling on narrow screens. */
+.records-card { border-radius: 9px; }
+.records-toolbar { margin-bottom: 17px; }
+.table-search { height: 42px; border-color: #cfd9e6; border-radius: 6px; background: #fff; }
+.table-search input { color: #233b58; font-size: 14px; }
+.table-search input::placeholder { color: #75869a; }
+.table-responsive { width: 100%; overflow-x: auto; }
+.records-table { min-width: 760px; }
+.records-table thead { background: #f1f4f8; }
+.records-table th {
+  padding: 13px 14px;
+  color: #405670;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .35px;
+}
+.records-table td {
+  padding: 14px;
+  color: #344b66;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.records-table tbody tr:hover { background: #f8fafd; }
+.small-action {
+  min-height: 34px;
+  padding: 7px 11px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+.discharge-form input { width: 78px; padding: 7px; font-size: 12px; }
+.referral-accept-form select, .referral-accept-form input {
+  max-width: 130px;
+  min-height: 34px;
+  padding: 7px;
+  font-size: 12px;
+}
+.empty-state { color: #5e7188; }
+.empty-state b { color: #263e59; font-size: 15px; }
+.empty-state small { color: #60738a; font-size: 13px; }
+.error-page { border-radius: 10px; box-shadow: none; }
+.error-page h1 { color: #344b66; font-size: 19px; }
+
+/* Visible keyboard focus and improved small-screen readability. */
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(36, 95, 196, .28);
+  outline-offset: 2px;
+}
+@media (max-width: 780px) {
+  .app-layout { grid-template-columns: 1fr; }
+  .side-link { min-height: 40px; font-size: 13px; }
+  .sidebar-label { display: none; }
+  .app-sidebar { padding: 9px 12px; }
+  .app-main { padding: 22px 15px 36px; }
+  .page-heading h1 { font-size: 28px; }
+  .data-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .records-table { min-width: 760px; }
+  .topbar-context { display: none; }
+}
+@media (max-width: 480px) {
+  .app-brand { font-size: 15px; }
+  .app-brand small { font-size: 8px; }
+  .topbar-right { gap: 10px; }
+  .user-chip { font-size: 0; }
+  .user-avatar { width: 30px; height: 30px; }
+  .topbar-logout { font-size: 12px; }
+  .page-heading { align-items: flex-start; flex-direction: column; }
+  .data-form { grid-template-columns: 1fr; }
+  .form-span { grid-column: auto; }
+  .records-toolbar { align-items: flex-start; flex-direction: column; }
+  .table-search { width: 100%; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat-top { font-size: 10px; }
+  .stat-card strong { font-size: 29px; }
+  .branch-card, .recent-card, .form-card, .records-card { padding: 15px; }
+}
