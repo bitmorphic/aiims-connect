@@ -61,8 +61,10 @@ Key design decisions:
 
 The ER diagram below represents the current 15-entity schema.
 
-![AIIMS Connect entity relationship diagram](aiims_connect_er_diagram.png)
-
+<div align="center">
+  <img src="tests/er-diagram.png" alt="ER DIAGRAM">
+  <br><br>
+</div>
 ### DBMS objects
 
 | Database object | Count | Purpose |
