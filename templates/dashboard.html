@@ -1,82 +1,70 @@
 {% extends "base.html" %}
-{% block title %}Overview | AIIMS Connect{% endblock %}
+{% block title %}Dashboard | AIIMS Connect{% endblock %}
 {% block content %}
 <div class="page-heading dashboard-heading">
-  <div><span class="page-eyebrow">NETWORK OVERVIEW</span><h1>Good to see you, {{ session.get('display_name', 'there') }}.</h1><p>Here is the latest picture of your connected care workspace.</p></div>
+  <div>
+    <h1>Dashboard</h1>
+    <p>Hospital network summary and latest activity.</p>
+  </div>
   <div class="heading-date"><span class="status-dot"></span> Database connected</div>
 </div>
-<div class="stats-grid">
-  <div class="stat-card stat-blue"><div class="stat-top"><span>REGISTERED PATIENTS</span><i>◎</i></div><strong>{{ stats.patients }}</strong><small>Patients in your workspace</small><div class="stat-accent"></div></div>
-  <div class="stat-card"><div class="stat-top"><span>APPOINTMENTS</span><i>▦</i></div><strong>{{ stats.appointments }}</strong><small>Recorded OPD visits</small><div class="stat-accent accent-mint"></div></div>
-  <div class="stat-card"><div class="stat-top"><span>ACTIVE ADMISSIONS</span><i>▣</i></div><strong>{{ stats.admissions }}</strong><small>Patients currently admitted</small><div class="stat-accent accent-peach"></div></div>
-  <div class="stat-card"><div class="stat-top"><span>REFERRALS</span><i>⇄</i></div><strong>{{ stats.referrals }}</strong><small>{% if session.role == 'chain_admin' %}Pending across the network{% else %}Related to your branch or account{% endif %}</small><div class="stat-accent accent-violet"></div></div>
-</div>
 
-<div class="dashboard-grid">
-  <section class="content-card branch-card">
-    <div class="card-heading"><div><span class="page-eyebrow">NETWORK CAPACITY</span><h2>Branch occupancy</h2></div><span class="card-note">Live from MySQL view</span></div>
-    {% if branches %}
-    <div class="branch-chart-wrap"><canvas id="occupancyChart"></canvas></div>
-    <div class="branch-list">
-      {% for b in branches %}
-      <div class="branch-row">
-        <div class="branch-name"><span class="branch-dot"></span><div><b>{{ b.Branch_Name }}</b><small>{{ b.City }} · {{ b.Wards }} wards</small></div></div>
-        <div class="branch-bed-count"><b>{{ b.Available_Beds }}/{{ b.Total_Beds }}</b><small>available beds</small></div>
-        <div class="branch-progress"><span style="width: {{ b.Occupancy_Pct or 0 }}%"></span></div>
-        <b class="occupancy-value">{{ b.Occupancy_Pct or 0 }}%</b>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty-state">Branch capacity data is not available yet.</div>
-    {% endif %}
-  </section>
+<section class="simple-stats" aria-label="Database summary">
+  <div class="simple-stat"><span>Registered patients</span><strong>{{ stats.patients }}</strong></div>
+  <div class="simple-stat"><span>Appointments</span><strong>{{ stats.appointments }}</strong></div>
+  <div class="simple-stat"><span>Active admissions</span><strong>{{ stats.admissions }}</strong></div>
+  <div class="simple-stat"><span>Referrals</span><strong>{{ stats.referrals }}</strong></div>
+</section>
 
-  <section class="content-card recent-card">
-    <div class="card-heading"><div><span class="page-eyebrow">LATEST ACTIVITY</span><h2>Recent appointments</h2></div><a href="{{ url_for('main.appointments') }}">View all →</a></div>
-    {% if recent %}
-    <div class="recent-list">
-      {% for a in recent %}
-      <div class="recent-item">
-        <div class="recent-date"><b>{{ a.Appt_Date.strftime('%d') if a.Appt_Date.strftime is defined else a.Appt_Date }}</b><small>{{ a.Appt_Date.strftime('%b') if a.Appt_Date.strftime is defined else '' }}</small></div>
-        <div class="recent-info"><b>{{ a.Patient_Name }}</b><small>{{ a.Doctor_Name }} · {{ a.Dept_Name }}</small><small>{{ a.Branch_Name }} · {{ a.Time_Slot }}</small></div>
-        <span class="status-pill status-{{ a.Status|lower }}">{{ a.Status }}</span>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty-state">No appointment activity to show yet.</div>
-    {% endif %}
-  </section>
-</div>
+<section class="dashboard-section">
+  <h2>Branch capacity</h2>
+  {% if branches %}
+  <div class="table-responsive">
+    <table class="records-table">
+      <thead><tr><th>Branch</th><th>City</th><th>Wards</th><th>Total beds</th><th>Available beds</th><th>Occupied beds</th><th>Occupancy</th></tr></thead>
+      <tbody>
+        {% for b in branches %}
+        <tr>
+          <td>{{ b.Branch_Name }}</td>
+          <td>{{ b.City }}</td>
+          <td>{{ b.Wards }}</td>
+          <td>{{ b.Total_Beds }}</td>
+          <td>{{ b.Available_Beds }}</td>
+          <td>{{ (b.Total_Beds|int) - (b.Available_Beds|int) }}</td>
+          <td>{{ b.Occupancy_Pct or 0 }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="dashboard-empty">Branch capacity information is not available.</p>
+  {% endif %}
+</section>
 
-<div class="quick-actions">
-  <div><span class="page-eyebrow">QUICK ACCESS</span><h2>Move work forward.</h2></div>
-  {% if session.role in ('chain_admin', 'branch_admin', 'receptionist') %}<a href="{{ url_for('main.patients') }}"><span>◎</span><b>Register patient</b><small>Create a new UHID</small></a>{% endif %}
-  {% if session.role in ('chain_admin', 'branch_admin', 'receptionist', 'patient') %}<a href="{{ url_for('main.appointments') }}"><span>▦</span><b>Book appointment</b><small>Find a doctor slot</small></a>{% endif %}
-  {% if session.role in ('chain_admin', 'branch_admin', 'receptionist') %}<a href="{{ url_for('main.admissions') }}"><span>▣</span><b>Manage admissions</b><small>Track beds and discharge</small></a>{% endif %}
-  {% if session.role == 'doctor' %}<a href="{{ url_for('main.referrals') }}"><span>⇄</span><b>Create referral</b><small>Coordinate between branches</small></a>{% endif %}
-</div>
-
-<script>
-const branchRows = {{ chart_branches|tojson }};
-const chartNode = document.getElementById('occupancyChart');
-if (chartNode && branchRows.length) {
-  new Chart(chartNode, {
-    type: 'bar',
-    data: {
-      labels: branchRows.map(x => x.Branch_Name),
-      datasets: [
-        {label: 'Occupied', data: branchRows.map(x => Number(x.Total_Beds) - Number(x.Available_Beds)), backgroundColor: '#3b73db', borderRadius: 7, barThickness: 22},
-        {label: 'Available', data: branchRows.map(x => Number(x.Available_Beds)), backgroundColor: '#dce7f8', borderRadius: 7, barThickness: 22}
-      ]
-    },
-    options: {
-      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: {legend: {position: 'bottom', labels: {usePointStyle: true, boxWidth: 7, color: '#66758a', font: {family: 'DM Sans'}}}},
-      scales: {x: {stacked: true, grid: {color: '#edf1f6'}, ticks: {color: '#8b98a9'}}, y: {stacked: true, grid: {display: false}, ticks: {color: '#3a4b62'}}}
-    }
-  });
-}
-</script>
+<section class="dashboard-section">
+  <h2>Recent appointments</h2>
+  {% if recent %}
+  <div class="table-responsive">
+    <table class="records-table">
+      <thead><tr><th>Appointment date</th><th>Time</th><th>Patient</th><th>Doctor</th><th>Department</th><th>Branch</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for a in recent %}
+        <tr>
+          <td>{{ a.Appt_Date.strftime('%Y-%m-%d') if a.Appt_Date.strftime is defined else a.Appt_Date }}</td>
+          <td>{{ a.Time_Slot }}</td>
+          <td>{{ a.Patient_Name }}</td>
+          <td>{{ a.Doctor_Name }}</td>
+          <td>{{ a.Dept_Name }}</td>
+          <td>{{ a.Branch_Name }}</td>
+          <td><span class="status-pill status-{{ a.Status|lower }}">{{ a.Status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="dashboard-empty">No appointments are available.</p>
+  {% endif %}
+</section>
 {% endblock %}
