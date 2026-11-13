@@ -3,30 +3,24 @@
 {% block content %}
 <div class="login-page">
   <a class="login-back" href="{{ url_for('main.home') }}">← Back to overview</a>
-  <div class="login-layout">
-    <section class="login-story">
-      <a class="site-brand site-brand-light" href="{{ url_for('main.home') }}"><span class="brand-mark">+</span><span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span></a>
-      <div class="login-story-copy"><div class="eyebrow eyebrow-light"><span class="eyebrow-dot"></span> CONNECTED CARE WORKSPACE</div><h1>One network.<br><em>One patient story.</em></h1><p>Access patient identity, OPD scheduling, ward operations and branch coordination from one secure workspace.</p></div>
-      <div class="login-story-bottom"><span>01</span><div><b>Shared UHID</b><small>Patient records connected across locations</small></div><span class="login-story-line"></span><span>02</span><div><b>Traceable workflows</b><small>Database-backed operations and audit trail</small></div></div>
-      <div class="login-orbit"><i></i><i></i><i></i><b>+</b></div>
-    </section>
-    <section class="login-form-side">
-      <div class="login-card">
-        <div class="login-card-mark">+</div>
-        <span class="form-eyebrow">WELCOME BACK</span>
-        <h2>Sign in to your<br>workspace.</h2>
-        <p class="login-hint">Use the account provided by your hospital administrator.</p>
-        <form method="post" class="login-form">
-          <label for="username">Username</label>
-          <input id="username" name="username" type="text" autocomplete="username" placeholder="Enter your username" required autofocus>
-          <label for="password">Password</label>
-          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
-          <button class="button button-blue login-submit" type="submit">Sign in securely <span>→</span></button>
-        </form>
-        <div class="login-security"><span>⌑</span> Authenticated against the hospital database</div>
-        <small class="login-disclaimer">Academic prototype · Use synthetic demonstration accounts only</small>
-      </div>
-    </section>
-  </div>
+  <section class="simple-login-card">
+    <a class="site-brand login-brand" href="{{ url_for('main.home') }}">
+      <span class="brand-mark">+</span>
+      <span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span>
+    </a>
+    <div class="login-card-mark">+</div>
+    <p class="login-kicker">HOSPITAL NETWORK WORKSPACE</p>
+    <h1>Sign in to AIIMS Connect</h1>
+    <p class="login-hint">Use the account provided by your hospital administrator.</p>
+    <form method="post" class="login-form">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" placeholder="Enter your username" required autofocus>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+      <button class="button button-blue login-submit" type="submit">Sign in</button>
+    </form>
+    <div class="login-security">Authenticated against the hospital database.</div>
+    <small class="login-disclaimer">Academic prototype · Use synthetic demonstration accounts only.</small>
+  </section>
 </div>
 {% endblock %}
