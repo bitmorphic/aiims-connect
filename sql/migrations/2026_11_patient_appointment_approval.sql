@@ -4,6 +4,9 @@
 -- This migration does not create, delete, or modify any patient or appointment rows.
 
 ALTER TABLE appointment
+    MODIFY COLUMN Status varchar(20) NOT NULL DEFAULT 'Scheduled';
+
+ALTER TABLE appointment
     DROP CHECK chk_appt_status;
 
 ALTER TABLE appointment
