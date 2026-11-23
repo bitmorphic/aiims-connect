@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% block title %}FHIR Explorer | AIIMS Connect{% endblock %}
+{% block title %}FHIR Explorer | AIIMS Connect{% endif %}
+{% endblock %}
 {% block content %}
 <div class="page-heading">
   <div>
@@ -10,6 +11,14 @@
   <div class="table-count"><b>R4</b><small>FHIR version 4.0.1</small></div>
 </div>
 
+{% if not storage_ready %}
+<section class="content-card fhir-empty-panel">
+  <span class="fhir-empty-icon">FHIR</span>
+  <h2>FHIR storage is not set up yet</h2>
+  <p>The application is deployed, but the FHIR database migration has not been applied to this environment yet.</p>
+  <small>Once the isolated FHIR tables are created and the Synthea archive is imported, the synthetic patient directory and clinical histories will appear here. Existing hospital workflows remain available.</small>
+</section>
+{% else %}
 <section class="content-card form-card">
   <div class="card-heading">
     <div><span class="page-eyebrow">SYNTHETIC PATIENT DIRECTORY</span><h2>Find a patient</h2></div>
