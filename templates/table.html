@@ -60,29 +60,24 @@
 {% endif %}
 
 {% if kind == 'patients' and show_fhir_patients %}
-<section class="content-card">
-  <div class="records-toolbar">
-    <div><span class="page-eyebrow">FHIR R4 · SYNTHETIC DATA</span><h2>FHIR patient samples</h2></div>
-    <span class="table-count"><b>{{ fhir_patients|length }}</b><small>shown</small></span>
+<section class="content-card fhir-workspace-panel">
+  <div class="fhir-workspace-heading">
+    <div><span class="page-eyebrow">INTEROPERABILITY · FHIR R4</span><h2>Synthetic patient records</h2><p>Sample clinical identities from the Synthea FHIR dataset.</p></div>
+    <a class="fhir-text-link" href="{{ url_for('fhir.explorer') }}">Open FHIR Explorer <span>→</span></a>
   </div>
-  <p class="page-note">Read-only Synthea examples from the FHIR store. These identities have FHIR IDs, not AIIMS UHIDs, and are not available for hospital booking or admission.</p>
+  <div class="fhir-safety-note"><span class="fhir-note-dot"></span>Separate from AIIMS UHIDs · Read-only · Not available for booking or admission</div>
   {% if fhir_patients %}
-  <div class="fhir-patient-items">
+  <div class="fhir-sample-grid">
     {% for patient in fhir_patients %}
-    <a class="fhir-patient-item" href="{{ url_for('fhir.explorer', patient=patient.id) }}">
-      <span class="fhir-patient-avatar">{{ patient.name[:1]|upper }}</span>
-      <span class="fhir-patient-copy">
-        <b>{{ patient.name }}</b>
-        <small>{{ patient.gender|title }} · {{ patient.birth_date }}</small>
-        <small class="fhir-id">FHIR ID: {{ patient.id }}</small>
-        <small>{{ patient.encounter_count }} linked clinical encounters · synthetic</small>
-      </span>
-      <span class="fhir-patient-arrow">View history →</span>
+    <a class="fhir-sample-card" href="{{ url_for('fhir.explorer', patient=patient.id) }}">
+      <span class="fhir-sample-avatar">{{ patient.name[:1]|upper }}</span>
+      <span class="fhir-sample-main"><b>{{ patient.name }}</b><small>{{ patient.gender|title }} <i>·</i> {{ patient.birth_date }}</small><code>{{ patient.id }}</code></span>
+      <span class="fhir-sample-footer"><b>{{ patient.encounter_count }}</b> historical encounters <span>View history ↗</span></span>
     </a>
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty-state"><b>No FHIR sample patients imported</b><small>When a Synthea sample is imported, its synthetic identities will appear here without being added to the AIIMS patient registry.</small></div>
+  <div class="fhir-panel-empty"><span class="fhir-empty-icon">P</span><div><b>No FHIR patient samples imported</b><small>The patient cards will populate when a Synthea sample is loaded. Operational patient records are unaffected.</small></div></div>
   {% endif %}
 </section>
 {% endif %}
@@ -164,37 +159,29 @@
   <div class="empty-state"><span>◎</span><b>No records found</b><small>Records will appear here as workflows are completed.</small></div>
   {% endif %}
 
+</section>
+
 {% if kind == 'appointments' and show_fhir_encounters %}
-<section class="content-card">
-  <div class="records-toolbar">
-    <div><span class="page-eyebrow">FHIR R4 · SYNTHETIC DATA</span><h2>Historical clinical encounters</h2></div>
-    <span class="table-count"><b>{{ fhir_encounters|length }}</b><small>shown</small></span>
+<section class="content-card fhir-workspace-panel">
+  <div class="fhir-workspace-heading">
+    <div><span class="page-eyebrow">INTEROPERABILITY · FHIR R4</span><h2>Historical clinical encounters</h2><p>Recorded care visits from the synthetic FHIR dataset.</p></div>
+    <a class="fhir-text-link" href="{{ url_for('fhir.explorer') }}">Open FHIR Explorer <span>→</span></a>
   </div>
-  <p class="page-note">These are FHIR <strong>Encounter</strong> resources describing past or recorded care visits. They are not bookable Appointment slots and do not change the operational appointment schedule.</p>
+  <div class="fhir-safety-note"><span class="fhir-note-dot"></span>Clinical history only · Not bookable appointment slots · Does not change the OPD schedule</div>
   {% if fhir_encounters %}
-  <div class="fhir-timeline">
+  <div class="fhir-encounter-grid">
     {% for encounter in fhir_encounters %}
-    <article class="fhir-record">
-      <div class="fhir-record-head">
-        <div>
-          <span class="fhir-resource-type">FHIR ENCOUNTER · {{ encounter.resource_id }}</span>
-          <h3>{{ encounter.label }}</h3>
-        </div>
-        <span class="status-pill">{{ encounter.status }}</span>
-      </div>
-      <div class="fhir-record-meta">
-        <span>{{ encounter.patient_name }} · {{ encounter.event_date or 'Date not recorded' }}</span>
-        {% if encounter.patient_fhir_id %}
-        <a href="{{ url_for('fhir.explorer', patient=encounter.patient_fhir_id) }}">Open FHIR patient history →</a>
-        {% endif %}
-      </div>
+    <article class="fhir-encounter-card">
+      <div class="fhir-encounter-card-top"><span class="fhir-encounter-symbol">E</span><span class="fhir-status-tag">{{ encounter.status }}</span></div>
+      <span class="fhir-resource-type">FHIR ENCOUNTER · {{ encounter.resource_id }}</span>
+      <h3>{{ encounter.label }}</h3>
+      <div class="fhir-encounter-patient">{{ encounter.patient_name }}</div>
+      <div class="fhir-encounter-card-footer"><span>{{ encounter.event_date or 'Date not recorded' }}</span>{% if encounter.patient_fhir_id %}<a href="{{ url_for('fhir.explorer', patient=encounter.patient_fhir_id) }}">Patient history ↗</a>{% endif %}</div>
     </article>
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty-state"><b>No FHIR encounters imported</b><small>The Synthea sample includes historical Encounter records, which will appear here after import.</small></div>
+  <div class="fhir-panel-empty"><span class="fhir-empty-icon">E</span><div><b>No historical FHIR encounters imported</b><small>Once the synthetic FHIR sample is imported, historical care visits will appear here. This section never creates or alters live appointments.</small></div></div>
   {% endif %}
 </section>
-{% endif %}
-</section>
-{% endblock %}
+{% endif %}{% endblock %}
