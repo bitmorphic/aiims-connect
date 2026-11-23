@@ -426,6 +426,19 @@ def explorer():
             resource = _json_resource(row["payload"])
             patient_options.append({"id": row["resource_id"], **_patient_display(resource)})
 
+        resource_totals = fetch_all(
+            "SELECT resource_type,COUNT(*) AS total FROM fhir_resource GROUP BY resource_type"
+        )
+        resource_counts = {
+            row["resource_type"]: int(row["total"]) for row in resource_totals
+        }
+        dataset_stats = {
+            "patients": resource_counts.get("Patient", 0),
+            "encounters": resource_counts.get("Encounter", 0),
+            "observations": resource_counts.get("Observation", 0),
+            "resources": sum(resource_counts.values()),
+        }
+
         selected = None
         counts = []
         records = []
@@ -472,11 +485,13 @@ def explorer():
             abort(500)
         return render_template(
             "fhir_explorer.html", query=query, patients=[], selected=None,
-            selected_id="", counts=[], records=[], storage_ready=False,
+            selected_id="", counts=[], records=[], dataset_stats={},
+            storage_ready=False,
         )
 
     return render_template(
         "fhir_explorer.html", query=query, patients=patient_options,
         selected=selected, selected_id=selected_id,
-        counts=counts, records=records, storage_ready=True,
+        counts=counts, records=records, dataset_stats=dataset_stats,
+        storage_ready=True,
     )
