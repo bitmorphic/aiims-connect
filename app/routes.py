@@ -81,6 +81,106 @@ def _safe_one(sql, params=()):
         current_app.logger.exception("Database read failed")
         raise
 
+def _fhir_optional_query(sql, params=()):
+    """Read FHIR preview data when the optional FHIR store is installed."""
+    try:
+        return _safe_query(sql, params)
+    except mysql.connector.Error as exc:
+        if getattr(exc, "errno", None) == 1146:
+            return []
+        raise
+
+
+def _fhir_patient_preview(query="", limit=8):
+    from .fhir import _json_resource, _patient_display
+
+    params = ()
+    where = "resource_type='Patient'"
+    query = (query or "").strip()
+    if query:
+        where += """ AND (resource_id LIKE %s OR JSON_SEARCH(
+            payload,'one',%s,NULL,
+            '$.name[*].family','$.name[*].given[*]','$.name[*].text'
+        ) IS NOT NULL)"""
+        params = (f"%{query}%", f"%{query}%")
+    rows = _fhir_optional_query(
+        "SELECT resource_id,payload FROM fhir_resource WHERE " + where
+        + " ORDER BY resource_id LIMIT %s",
+        params + (limit,),
+    )
+    if not rows:
+        return []
+    patient_ids = [row["resource_id"] for row in rows]
+    marks = ",".join(["%s"] * len(patient_ids))
+    count_rows = _fhir_optional_query(
+        "SELECT patient_fhir_id,COUNT(*) AS encounter_count FROM fhir_resource "
+        "WHERE resource_type='Encounter' AND patient_fhir_id IN (" + marks + ") "
+        "GROUP BY patient_fhir_id",
+        tuple(patient_ids),
+    )
+    counts = {row["patient_fhir_id"]: int(row["encounter_count"]) for row in count_rows}
+    result = []
+    for row in rows:
+        resource = _json_resource(row["payload"])
+        result.append({
+            "id": row["resource_id"],
+            **_patient_display(resource),
+            "encounter_count": counts.get(row["resource_id"], 0),
+        })
+    return result
+
+
+def _fhir_encounter_preview(limit=12):
+    from .fhir import _json_resource, _patient_display
+
+    rows = _fhir_optional_query(
+        """SELECT e.resource_id,e.patient_fhir_id,e.last_updated,e.payload,
+                  p.payload AS patient_payload
+           FROM fhir_resource e
+           LEFT JOIN fhir_resource p
+             ON p.resource_type='Patient' AND p.resource_id=e.patient_fhir_id
+           WHERE e.resource_type='Encounter'
+           ORDER BY COALESCE(
+             JSON_UNQUOTE(JSON_EXTRACT(e.payload,'$.period.start')),
+             JSON_UNQUOTE(JSON_EXTRACT(e.payload,'$.date')),
+             e.last_updated
+           ) DESC
+           LIMIT %s""",
+        (limit,),
+    )
+    result = []
+    for row in rows:
+        resource = _json_resource(row["payload"])
+        patient = _json_resource(row["patient_payload"]) if row.get("patient_payload") else {}
+        names = _patient_display(patient) if patient else {"name": "Synthetic patient"}
+        encounter_types = resource.get("type") or []
+        label = ""
+        if encounter_types:
+            concept = encounter_types[0]
+            label = concept.get("text") or ""
+            if not label:
+                codings = concept.get("coding") or []
+                if codings:
+                    label = codings[0].get("display") or codings[0].get("code") or ""
+        encounter_class = resource.get("class") or {}
+        if not label:
+            label = encounter_class.get("display") or encounter_class.get("code") or "Clinical encounter"
+        event_date = (
+            (resource.get("period") or {}).get("start")
+            or resource.get("date")
+            or row.get("last_updated")
+            or ""
+        )
+        result.append({
+            "resource_id": row["resource_id"],
+            "patient_fhir_id": row.get("patient_fhir_id") or "",
+            "patient_name": names.get("name", "Synthetic patient"),
+            "label": label,
+            "status": resource.get("status") or "unknown",
+            "event_date": str(event_date),
+        })
+    return result
+
 
 def _time_slot_is_valid(value):
     try:
@@ -388,10 +488,12 @@ def patients():
             params += (f"%{q}%", f"%{q}%", f"%{q}%")
         sql += " ORDER BY p.Created_At DESC LIMIT 200"
         rows = _safe_query(sql, params)
+    fhir_patients = _fhir_patient_preview(q) if role != "patient" else []
     return render_template(
         "table.html", title="Patient registry", eyebrow="PATIENT SERVICES",
         subtitle="Patients create their own accounts through the Patient Portal. Staff can view and search the shared registry.",
         rows=rows, kind="patients", q=q, can_create=False,
+        fhir_patients=fhir_patients, show_fhir_patients=(role != "patient"),
     )
 
 
@@ -470,11 +572,13 @@ def appointments():
         doctor_params = (branch_id(),)
     doctor_sql += " ORDER BY b.Branch_Name,s.Name"
     doctors = _safe_query(doctor_sql, doctor_params)
+    fhir_encounters = _fhir_encounter_preview() if role != "patient" else []
     return render_template(
         "table.html", title="Appointments", eyebrow="OUTPATIENT DEPARTMENT",
         subtitle=("Your requests stay Pending Approval until a hospital administrator confirms them." if role == "patient" else "Review patient appointment requests and manage confirmed OPD visits."),
         rows=rows, kind="appointments", q=request.args.get("q", ""),
         can_create=can_create, patients=patients_list, doctors=doctors,
+        fhir_encounters=fhir_encounters, show_fhir_encounters=(role != "patient"),
     )
 
 

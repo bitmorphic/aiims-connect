@@ -843,6 +843,9 @@ select:focus-visible, textarea:focus-visible {
 
 
 /* FHIR Explorer */
+
+.page-note { margin: -2px 0 16px; color: #72839a; font-size: 11px; line-height: 1.75; }
+.page-note strong { color: #38577b; }
 .fhir-explorer-grid { display: grid; grid-template-columns: minmax(270px,.72fr) minmax(0,1.8fr); gap: 18px; align-items: start; margin-bottom: 42px; }
 .fhir-patient-list { position: sticky; top: 18px; }
 .fhir-patient-items { display: grid; gap: 5px; }
