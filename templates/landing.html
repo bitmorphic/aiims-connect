@@ -7,14 +7,21 @@
       <span class="brand-mark">+</span>
       <span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span>
     </a>
-    <a class="button button-blue" href="{{ url_for('main.login') }}">Sign in</a>
+    <nav class="public-auth-links" aria-label="Portal links">
+      <a class="button button-light" href="{{ url_for('main.login', portal='staff') }}">Hospital staff</a>
+      <a class="button button-blue" href="{{ url_for('main.login', portal='patient') }}">Patient portal</a>
+    </nav>
   </header>
   <main class="minimal-public-main">
+    <span class="page-eyebrow">ONE PATIENT · ONE ID · EVERY BRANCH</span>
     <h1>AIIMS Connect</h1>
-    <p class="lead">A multi-branch hospital management system built as an academic DBMS project.</p>
-    <p>Manage patient records, appointments, admissions, prescriptions, referrals and billing through one MySQL database.</p>
-    <a class="button button-blue" href="{{ url_for('main.login') }}">Open workspace</a>
-    <p class="project-note">Independent academic prototype. Not affiliated with AIIMS or the Government of India. Uses synthetic demonstration data.</p>
+    <p class="lead">One patient. One ID. Every branch. Your care journey, connected across hospital branches.</p>
+    <p>Create a patient account, request an OPD appointment and track its approval. Hospital administrators review appointment requests before they are confirmed.</p>
+    <div class="public-portal-actions">
+      <a class="button button-blue" href="{{ url_for('main.patient_signup') }}">Create patient account <span>→</span></a>
+      <a class="text-link" href="{{ url_for('main.login', portal='staff') }}">Hospital staff sign in</a>
+    </div>
+    <p class="project-note">Independent academic prototype. Not affiliated with AIIMS or the Government of India. Uses synthetic demonstration data only.</p>
   </main>
   <footer class="minimal-public-footer">AIIMS Connect · Hospital Management System</footer>
 </div>

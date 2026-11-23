@@ -14,5 +14,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run repository smoke tests
+      - name: Install application and test dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run repository test suite
         run: python -m unittest discover -s tests -v

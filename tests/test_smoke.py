@@ -41,17 +41,18 @@ class RepositorySmokeTests(unittest.TestCase):
 
     def test_portable_schema_contains_expected_objects(self):
         schema = self.read("sql", "schema.sql")
-        self.assertEqual(schema.count("CREATE TABLE "), 15)
+        self.assertEqual(schema.count("CREATE TABLE "), 17)
         self.assertEqual(schema.count("CREATE TRIGGER "), 14)
         self.assertEqual(schema.count("CREATE PROCEDURE "), 11)
         self.assertEqual(schema.count("CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW "), 7)
         self.assertNotRegex(schema, r"(?im)^\s*(DROP|USE)\b")
 
-    def test_railway_bootstrap_generator_and_demo_previewer_exist(self):
+    def test_railway_bootstrap_and_fhir_first_cleanup_tools_exist(self):
         self.assertTrue((ROOT / "scripts" / "prepare_railway_schema.py").exists())
+        self.assertTrue((ROOT / "scripts" / "clean_demo_data.py").exists())
         seeder = self.read("scripts", "seed_demo.py")
-        self.assertIn("--apply", seeder)
-        self.assertIn("PREVIEW ONLY", seeder)
+        self.assertIn("Demo data seeding is disabled", seeder)
+        self.assertNotIn("RegisterPatient", seeder)
 
 
 if __name__ == "__main__":

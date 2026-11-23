@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Create patient account | AIIMS Connect{% endblock %}
+{% block content %}
+<div class="login-page">
+  <a class="login-back" href="{{ url_for('main.home') }}">← Back to home</a>
+  <section class="simple-login-card signup-card">
+    <a class="site-brand login-brand" href="{{ url_for('main.home') }}">
+      <span class="brand-mark">+</span>
+      <span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span>
+    </a>
+    <p class="login-kicker">PATIENT PORTAL</p>
+    <h1>Create your account</h1>
+    <p class="login-hint">Register yourself to receive a unique UHID, then sign in to request an appointment. Hospital staff do not create this account for you.</p>
+    <form method="post" class="login-form signup-form">
+      <label>Full name<input name="name" maxlength="100" autocomplete="name" required placeholder="Your full name"></label>
+      <label>Date of birth<input name="dob" type="date" min="1900-01-02" required></label>
+      <label>Gender<select name="gender" required><option value="">Select gender</option><option>Male</option><option>Female</option><option>Other</option></select></label>
+      <label>Blood group<select name="blood_group"><option value="">Not specified</option>{% for bg in ['A+','A-','B+','B-','AB+','AB-','O+','O-'] %}<option value="{{ bg }}">{{ bg }}</option>{% endfor %}</select></label>
+      <label>Phone<input name="phone" type="tel" maxlength="15" autocomplete="tel" required placeholder="Contact number"></label>
+      <label>Address<input name="address" maxlength="255" autocomplete="street-address" required placeholder="Your address"></label>
+      <label>Choose username<input name="username" minlength="4" maxlength="50" autocomplete="username" required placeholder="At least 4 characters"></label>
+      <label>Create password<input name="password" type="password" minlength="8" autocomplete="new-password" required placeholder="At least 8 characters"></label>
+      <label class="signup-full">Confirm password<input name="confirm_password" type="password" minlength="8" autocomplete="new-password" required placeholder="Enter your password again"></label>
+      <div class="signup-full">
+        <button class="button button-blue login-submit" type="submit">Create patient account <span>→</span></button>
+      </div>
+    </form>
+    <p class="auth-switch">Already registered? <a href="{{ url_for('main.login', portal='patient') }}">Patient sign in</a></p>
+    <small class="login-disclaimer">Academic prototype · Use synthetic demonstration data only.</small>
+  </section>
+</div>
+{% endblock %}

@@ -28,6 +28,14 @@
   <aside class="app-sidebar">
     <div class="sidebar-label">WORKSPACE</div>
     <a class="side-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}"><span>◫</span> Overview</a>
+    {% if session.get('role') == 'patient' %}
+    <div class="sidebar-label">MY HEALTH</div>
+    <a class="side-link {% if request.endpoint == 'main.patients' %}active{% endif %}" href="{{ url_for('main.patients') }}"><span>◎</span> My profile</a>
+    <a class="side-link {% if request.endpoint == 'main.appointments' %}active{% endif %}" href="{{ url_for('main.appointments') }}"><span>▦</span> My appointments</a>
+    <a class="side-link {% if request.endpoint == 'main.admissions' %}active{% endif %}" href="{{ url_for('main.admissions') }}"><span>▣</span> My admissions</a>
+    <a class="side-link {% if request.endpoint == 'main.prescriptions' %}active{% endif %}" href="{{ url_for('main.prescriptions') }}"><span>✚</span> Prescriptions</a>
+    <a class="side-link {% if request.endpoint == 'main.billing' %}active{% endif %}" href="{{ url_for('main.billing') }}"><span>▧</span> My bills</a>
+    {% else %}
     <div class="sidebar-label">CARE OPERATIONS</div>
     <a class="side-link {% if request.endpoint == 'main.patients' %}active{% endif %}" href="{{ url_for('main.patients') }}"><span>◎</span> Patients</a>
     <a class="side-link {% if request.endpoint == 'main.appointments' %}active{% endif %}" href="{{ url_for('main.appointments') }}"><span>▦</span> Appointments</a>
@@ -36,6 +44,8 @@
     <a class="side-link {% if request.endpoint == 'main.referrals' %}active{% endif %}" href="{{ url_for('main.referrals') }}"><span>⇄</span> Referrals</a>
     <a class="side-link {% if request.endpoint == 'main.prescriptions' %}active{% endif %}" href="{{ url_for('main.prescriptions') }}"><span>✚</span> Prescriptions</a>
     <a class="side-link {% if request.endpoint == 'main.billing' %}active{% endif %}" href="{{ url_for('main.billing') }}"><span>▧</span> Billing</a>
+    <a class="side-link {% if request.endpoint == 'fhir.explorer' %}active{% endif %}" href="{{ url_for('fhir.explorer') }}"><span>⌘</span> FHIR Explorer</a>
+    {% endif %}
     {% if session.get('role') in ('chain_admin', 'branch_admin') %}
     <div class="sidebar-label">INSIGHTS</div>
     <a class="side-link {% if request.endpoint == 'main.reports' %}active{% endif %}" href="{{ url_for('main.reports') }}"><span>⌁</span> Reports</a>

@@ -816,3 +816,69 @@ select:focus-visible, textarea:focus-visible {
   font-size: 13px;
 }
 .simple-login-card { margin: 0 auto; }
+
+
+/* Patient self-service and portal entry */
+.public-auth-links,.public-portal-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.public-auth-links .button,.public-portal-actions .button { text-decoration:none; }
+.public-portal-actions { margin-top:24px; }
+.public-portal-actions .text-link { display:inline-flex; align-items:center; min-height:42px; }
+.auth-switch { margin:18px 0 0; color:#6d7d91; font-size:12px; text-align:center; }
+.auth-switch a,.login-security a { color:#2868d8; font-weight:700; text-decoration:none; }
+.auth-switch a:hover,.login-security a:hover { text-decoration:underline; }
+.signup-card { width:min(650px,100%); }
+.signup-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:14px; row-gap:2px; }
+.signup-form label { min-width:0; }
+.signup-form input,.signup-form select { width:100%; }
+.signup-full { grid-column:1 / -1; }
+.signup-full .login-submit { margin-top:12px; }
+@media (max-width:560px) {
+  .signup-form { grid-template-columns:1fr; }
+  .signup-full { grid-column:auto; }
+  .public-auth-links { gap:7px; }
+  .public-auth-links .button { padding:9px 10px; font-size:10px; }
+}
+
+.status-pending-approval { color:#8a6416; border-color:#f0dfb2; background:#fff8e7; }
+
+
+/* FHIR Explorer */
+.fhir-explorer-grid { display: grid; grid-template-columns: minmax(270px,.72fr) minmax(0,1.8fr); gap: 18px; align-items: start; margin-bottom: 42px; }
+.fhir-patient-list { position: sticky; top: 18px; }
+.fhir-patient-items { display: grid; gap: 5px; }
+.fhir-patient-item { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border: 1px solid transparent; border-radius: 11px; text-decoration: none; transition: background .18s,border-color .18s; }
+.fhir-patient-item:hover,.fhir-patient-item.active { border-color: #dce7f5; background: #f3f7fd; }
+.fhir-patient-avatar { width: 36px; height: 36px; flex: 0 0 36px; display: grid; place-items: center; border-radius: 12px; color: #2868d8; background: #eaf1ff; font: 800 13px "Manrope",sans-serif; }
+.fhir-patient-copy { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.fhir-patient-copy b { overflow: hidden; color: #1c3555; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.fhir-patient-copy small,.fhir-id { color: #8190a5; font-size: 10px; }
+.fhir-id { overflow-wrap: anywhere; font-family: ui-monospace,Consolas,monospace; }
+.fhir-patient-arrow { margin-left: auto; color: #7e9bc1; }
+.fhir-detail-column { display: grid; gap: 18px; min-width: 0; }
+.fhir-profile-card h2 { margin: 7px 0 4px; color: var(--navy); font: 800 25px "Manrope",sans-serif; }
+.fhir-profile-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 22px; }
+.fhir-profile-meta div { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 10px; background: #f6f8fc; }
+.fhir-profile-meta small { color: #8493a7; font-size: 9px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; }
+.fhir-profile-meta b { color: #30445e; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.fhir-profile-meta .fhir-address { grid-column: 1 / -1; }
+.fhir-count-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(125px,1fr)); gap: 9px; }
+.fhir-count-card { min-width: 0; padding: 13px; border: 1px solid #e8edf4; border-radius: 11px; background: #fbfcfe; }
+.fhir-count-card b { display: block; color: #1a3c65; font: 800 22px "Manrope",sans-serif; letter-spacing: -.7px; }
+.fhir-count-card span { display: block; margin-top: 3px; color: #75849a; font-size: 10px; overflow-wrap: anywhere; }
+.fhir-timeline { display: grid; }
+.fhir-record { padding: 16px 0; border-bottom: 1px solid #edf1f6; }
+.fhir-record:last-child { border-bottom: 0; }
+.fhir-record-head { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
+.fhir-resource-type { color: #6480a2; font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.fhir-record h3 { margin: 5px 0 0; color: #1c3555; font: 700 14px "Manrope",sans-serif; }
+.fhir-record-meta { display: flex; justify-content: space-between; gap: 14px; margin-top: 9px; color: #8794a6; font-size: 10px; }
+.fhir-json-details { margin-top: 12px; }
+.fhir-json-details summary { color: #3467ad; cursor: pointer; font-size: 11px; font-weight: 700; }
+.fhir-json-details pre { max-height: 340px; overflow: auto; margin: 10px 0 0; padding: 14px; border-radius: 10px; color: #dce8f8; background: #11243b; font: 10px/1.6 ui-monospace,Consolas,monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fhir-empty-panel { min-height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 36px; }
+.fhir-empty-panel h2 { margin: 18px 0 8px; color: var(--navy); font: 800 20px "Manrope",sans-serif; }
+.fhir-empty-panel p { max-width: 420px; margin: 0; color: #718197; font-size: 12px; line-height: 1.8; }
+.fhir-empty-panel small { margin-top: 15px; color: #96a2b2; font-size: 10px; }
+.fhir-empty-icon { display: grid; place-items: center; width: 66px; height: 66px; border-radius: 20px; color: #2868d8; background: #eaf1ff; font: 800 18px "Manrope",sans-serif; letter-spacing: -1px; }
+@media (max-width: 950px) { .fhir-explorer-grid { grid-template-columns: 1fr; } .fhir-patient-list { position: static; } .fhir-patient-items { grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); } }
+@media (max-width: 560px) { .fhir-profile-meta { grid-template-columns: 1fr; } .fhir-profile-meta .fhir-address { grid-column: auto; } .fhir-record-head,.fhir-record-meta { align-items: flex-start; flex-direction: column; } }

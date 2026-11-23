@@ -6,23 +6,6 @@
   <div class="table-count"><b>{{ rows|length }}</b><small>records shown</small></div>
 </div>
 
-{% if kind == 'patients' and can_create %}
-<section class="content-card form-card">
-  <div class="card-heading"><div><span class="page-eyebrow">NEW PATIENT</span><h2>Register a patient</h2></div><span class="form-icon">◎</span></div>
-  <form method="post" class="data-form">
-    <label>Full name<input name="name" maxlength="100" required placeholder="Patient's full name"></label>
-    <label>Date of birth<input type="date" name="dob" min="1900-01-02" required></label>
-    <label>Gender<select name="gender" required><option value="">Select gender</option><option>Male</option><option>Female</option><option>Other</option></select></label>
-    <label>Blood group<select name="blood_group"><option value="">Not specified</option>{% for bg in ['A+','A-','B+','B-','AB+','AB-','O+','O-'] %}<option>{{ bg }}</option>{% endfor %}</select></label>
-    <label>Phone<input name="phone" maxlength="15" required placeholder="Synthetic demo phone"></label>
-    <label>Address<input name="address" maxlength="255" required placeholder="City or address"></label>
-    <label>Patient username<input name="username" minlength="4" maxlength="50" required placeholder="Login username"></label>
-    <label>Temporary password<input type="password" name="password" minlength="8" required placeholder="At least 8 characters"></label>
-    <div class="form-submit"><button class="button button-blue" type="submit">Create patient record <span>→</span></button><small>A UHID and login are generated together.</small></div>
-  </form>
-</section>
-{% endif %}
-
 {% if kind == 'appointments' and can_create %}
 <section class="content-card form-card">
   <div class="card-heading"><div><span class="page-eyebrow">OPD SCHEDULING</span><h2>Book an appointment</h2></div><span class="form-icon">▦</span></div>
@@ -33,7 +16,7 @@
     <label>Doctor<select name="doctor_id" required><option value="">Choose a doctor</option>{% for d in doctors %}<option value="{{ d.Staff_ID }}">{{ d.Name }} · {{ d.Specialization }} · {{ d.Branch_Name }}</option>{% endfor %}</select></label>
     <label>Appointment date<input type="date" name="appt_date" min="{{ (now_date if now_date is defined else '') }}" required></label>
     <label>OPD time slot<select name="time_slot" required><option value="">Choose a 30-minute slot</option>{% for t in ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','14:00','14:30','15:00','15:30','16:00','16:30'] %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select></label>
-    <div class="form-submit"><button class="button button-blue" type="submit">Book appointment <span>→</span></button><small>Doctor branch, slot uniqueness and token are enforced by MySQL.</small></div>
+    <div class="form-submit"><button class="button button-blue" type="submit">{{ 'Request appointment' if session.role == 'patient' else 'Book appointment' }} <span>→</span></button><small>{{ 'A hospital administrator must approve this request before it is confirmed.' if session.role == 'patient' else 'Doctor branch, slot uniqueness and token are enforced by MySQL.' }}</small></div>
   </form>
 </section>
 {% endif %}
@@ -97,7 +80,15 @@
       {% endfor %}
       {% if kind == 'appointments' %}
         <td class="action-cell">
-          {% if r.Status == 'Scheduled' %}
+          {% if r.Status == 'Pending Approval' %}
+            {% if session.role in ['chain_admin','branch_admin'] %}
+            <form method="post" action="{{ url_for('main.approve_appointment', appt_id=r.Appt_ID) }}" onsubmit="return confirm('Approve and confirm this patient appointment request?')"><button class="small-action action-success" type="submit">Approve</button></form>
+            {% endif %}
+            {% if session.role in ['chain_admin','branch_admin','patient'] %}
+            <form method="post" action="{{ url_for('main.cancel_appointment', appt_id=r.Appt_ID) }}" onsubmit="return confirm('Cancel this appointment request?')"><button class="small-action action-danger" type="submit">Cancel</button></form>
+            {% endif %}
+            {% if session.role not in ['chain_admin','branch_admin','patient'] %}<span class="muted-dash">Awaiting admin</span>{% endif %}
+          {% elif r.Status == 'Scheduled' %}
             {% if session.role in ['chain_admin','branch_admin','receptionist','doctor','patient'] %}
             <form method="post" action="{{ url_for('main.cancel_appointment', appt_id=r.Appt_ID) }}" onsubmit="return confirm('Cancel this appointment?')"><button class="small-action action-danger" type="submit">Cancel</button></form>
             {% endif %}

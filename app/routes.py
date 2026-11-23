@@ -147,10 +147,66 @@ def home():
     return render_template("landing.html", stats=stats, branches=branches)
 
 
+@bp.route("/patient-signup", methods=["GET", "POST"])
+def patient_signup():
+    """Public self-service patient registration; no staff account is required."""
+    if session.get("login_id"):
+        return redirect(url_for("main.dashboard"))
+
+    if request.method == "POST":
+        form = request.form
+        username = form.get("username", "").strip()
+        password = form.get("password", "")
+        confirm_password = form.get("confirm_password", "")
+
+        if len(username) < 4:
+            flash("Choose a username with at least 4 characters.", "warning")
+            return render_template("patient_signup.html")
+        if len(password) < 8:
+            flash("Choose a password with at least 8 characters.", "warning")
+            return render_template("patient_signup.html")
+        if password != confirm_password:
+            flash("The password confirmation does not match.", "warning")
+            return render_template("patient_signup.html")
+
+        password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        try:
+            uhid = call_procedure(
+                "RegisterPatient",
+                (
+                    form.get("name", "").strip(),
+                    form.get("dob"),
+                    form.get("gender"),
+                    form.get("blood_group") or None,
+                    form.get("phone", "").strip(),
+                    form.get("address", "").strip(),
+                    username,
+                    password_hash,
+                ),
+                actor_login_id=None,
+                returns_output=True,
+            )
+            flash(
+                "Patient account created successfully. Your UHID is " + str(uhid)
+                + ". Sign in to request an appointment.",
+                "success",
+            )
+            return redirect(url_for("main.login", portal="patient"))
+        except mysql.connector.Error as exc:
+            current_app.logger.exception("Self-service patient registration failed")
+            flash(getattr(exc, "msg", "Registration failed. Check your details or choose another username."), "danger")
+
+    return render_template("patient_signup.html")
+
+
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if session.get("login_id"):
         return redirect(url_for("main.dashboard"))
+
+    portal = request.values.get("portal", "staff").strip().lower()
+    if portal not in ("patient", "staff"):
+        portal = "staff"
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -171,7 +227,7 @@ def login():
         except mysql.connector.Error:
             current_app.logger.exception("Login database lookup failed")
             flash("The database is not reachable. Check the app's DB connection settings.", "danger")
-            return render_template("login.html")
+            return render_template("login.html", portal=portal)
 
         valid = False
         if row and row["Is_Active"]:
@@ -180,7 +236,10 @@ def login():
             except (ValueError, TypeError):
                 valid = False
 
-        if valid:
+        is_patient_account = bool(row and (row.get("Role") or "").strip().lower() == "patient")
+        portal_matches = is_patient_account if portal == "patient" else (row is not None and not is_patient_account)
+
+        if valid and portal_matches:
             session.clear()
             session.permanent = True
             role = role_from_record(row)
@@ -196,9 +255,12 @@ def login():
             )
             return redirect(url_for("main.dashboard"))
 
-        flash("Username or password is incorrect, or the account is inactive.", "danger")
+        if valid and not portal_matches:
+            flash("This account belongs to the other portal. Choose the correct sign-in option.", "warning")
+        else:
+            flash("Username or password is incorrect, or the account is inactive.", "danger")
 
-    return render_template("login.html")
+    return render_template("login.html", portal=portal)
 
 
 @bp.route("/logout", methods=["GET", "POST"])
@@ -305,46 +367,13 @@ def dashboard():
     )
 
 
-@bp.route("/patients", methods=["GET", "POST"])
+@bp.route("/patients")
 @login_required
 def patients():
     role = session["role"]
-    if request.method == "POST":
-        if role not in ("chain_admin", "branch_admin", "receptionist"):
-            abort(403)
-        form = request.form
-        username = form.get("username", "").strip()
-        password = form.get("password", "")
-        if len(username) < 4 or len(password) < 8:
-            flash("Patient login username must be at least 4 characters and password at least 8.", "warning")
-            return redirect(url_for("main.patients"))
-        password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-        try:
-            uhid = call_procedure(
-                "RegisterPatient",
-                (
-                    form.get("name", "").strip(),
-                    form.get("dob"),
-                    form.get("gender"),
-                    form.get("blood_group") or None,
-                    form.get("phone", "").strip(),
-                    form.get("address", "").strip(),
-                    username,
-                    password_hash,
-                ),
-                actor_login_id=actor_id(),
-                returns_output=True,
-            )
-            flash("Patient registered successfully. UHID: " + str(uhid), "success")
-        except mysql.connector.Error as exc:
-            current_app.logger.exception("Patient registration failed")
-            flash(getattr(exc, "msg", "Patient registration failed. Check the submitted details."), "danger")
-        return redirect(url_for("main.patients"))
-
     q = request.args.get("q", "").strip()
     if role == "patient":
-        sql = "SELECT * FROM patient_self_view WHERE UHID=%s"
-        rows = _safe_query(sql, (session["patient_uhid"],))
+        rows = _safe_query("SELECT * FROM patient_self_view WHERE UHID=%s", (session["patient_uhid"],))
     else:
         sql = """SELECT p.UHID,p.Name,p.DOB,p.Gender,p.Blood_Group,p.Phone,p.Address,
                         p.Created_At,l.Username
@@ -353,18 +382,16 @@ def patients():
         if role == "doctor":
             sql += " WHERE EXISTS (SELECT 1 FROM appointment ap WHERE ap.Patient_UHID=p.UHID AND ap.Doctor_ID=%s)"
             params = (session["staff_id"],)
-        # Patient UHIDs are chain-wide; branch staff use the shared registry so a
-        # newly registered patient is immediately findable before the first visit.
+        # Patient UHIDs are chain-wide; staff can search the shared registry.
         if q:
             sql += (" AND " if params else " WHERE ") + "(p.UHID LIKE %s OR p.Name LIKE %s OR p.Phone LIKE %s)"
             params += (f"%{q}%", f"%{q}%", f"%{q}%")
         sql += " ORDER BY p.Created_At DESC LIMIT 200"
         rows = _safe_query(sql, params)
-    can_create = role in ("chain_admin", "branch_admin", "receptionist")
     return render_template(
         "table.html", title="Patient registry", eyebrow="PATIENT SERVICES",
-        subtitle="A single UHID connects patient activity across the hospital network.",
-        rows=rows, kind="patients", q=q, can_create=can_create,
+        subtitle="Patients create their own accounts through the Patient Portal. Staff can view and search the shared registry.",
+        rows=rows, kind="patients", q=q, can_create=False,
     )
 
 
@@ -383,6 +410,20 @@ def appointments():
         if not patient_uhid or not doctor_id or not appt_date or not _time_slot_is_valid(time_slot):
             flash("Choose a patient, doctor, future date and a valid 30-minute OPD slot.", "warning")
             return redirect(url_for("main.appointments"))
+        if role == "patient":
+            approval_constraint = _safe_one(
+                """SELECT CHECK_CLAUSE
+                   FROM information_schema.CHECK_CONSTRAINTS
+                   WHERE CONSTRAINT_SCHEMA=DATABASE()
+                     AND CONSTRAINT_NAME='chk_appt_status'"""
+            )
+            check_clause = str((approval_constraint or {}).get("CHECK_CLAUSE", "")).lower()
+            if "pending approval" not in check_clause:
+                flash(
+                    "Patient appointment requests are temporarily unavailable while the database approval migration is pending. Existing hospital appointments are unaffected.",
+                    "warning",
+                )
+                return redirect(url_for("main.appointments"))
         if role in ("branch_admin", "receptionist"):
             doctor_branch = _safe_one(
                 "SELECT Branch_ID FROM staff WHERE Staff_ID=%s AND Staff_Type='Doctor'",
@@ -397,7 +438,18 @@ def appointments():
                 actor_login_id=actor_id(),
                 returns_output=True,
             )
-            flash("Appointment booked successfully. Appointment ID: " + str(appt_id), "success")
+            if role == "patient":
+                _, changed = execute(
+                    """UPDATE appointment SET Status='Pending Approval'
+                       WHERE Appt_ID=%s AND Patient_UHID=%s AND Status='Scheduled'""",
+                    (appt_id, patient_uhid),
+                    actor_login_id=actor_id(),
+                )
+                if changed != 1:
+                    raise mysql.connector.Error(msg="Appointment request was created but could not be moved into the approval queue.")
+                flash("Appointment request submitted. It will appear as Pending Approval until hospital administration confirms it.", "success")
+            else:
+                flash("Appointment booked successfully. Appointment ID: " + str(appt_id), "success")
         except mysql.connector.Error as exc:
             current_app.logger.exception("Appointment booking failed")
             flash(getattr(exc, "msg", "Appointment could not be booked. Try another slot."), "danger")
@@ -420,7 +472,7 @@ def appointments():
     doctors = _safe_query(doctor_sql, doctor_params)
     return render_template(
         "table.html", title="Appointments", eyebrow="OUTPATIENT DEPARTMENT",
-        subtitle="Book and manage OPD visits with database-enforced slot and token rules.",
+        subtitle=("Your requests stay Pending Approval until a hospital administrator confirms them." if role == "patient" else "Review patient appointment requests and manage confirmed OPD visits."),
         rows=rows, kind="appointments", q=request.args.get("q", ""),
         can_create=can_create, patients=patients_list, doctors=doctors,
     )
@@ -443,10 +495,62 @@ def cancel_appointment(appt_id):
     if not allowed:
         abort(403)
     try:
-        call_procedure("CancelAppointment", (appt_id,), actor_login_id=actor_id())
-        flash("Appointment cancelled.", "success")
+        if row["Status"] == "Pending Approval":
+            _, changed = execute(
+                """UPDATE appointment SET Status='Cancelled'
+                   WHERE Appt_ID=%s AND Status='Pending Approval'""",
+                (appt_id,),
+                actor_login_id=actor_id(),
+            )
+            if changed != 1:
+                flash("The appointment request is no longer pending.", "warning")
+            else:
+                flash("Appointment request cancelled.", "success")
+        else:
+            call_procedure("CancelAppointment", (appt_id,), actor_login_id=actor_id())
+            flash("Appointment cancelled.", "success")
     except mysql.connector.Error as exc:
         flash(getattr(exc, "msg", "Appointment could not be cancelled."), "danger")
+    return redirect(url_for("main.appointments"))
+
+
+@bp.post("/appointments/<int:appt_id>/approve")
+@login_required
+def approve_appointment(appt_id):
+    role = session["role"]
+    if role not in ("chain_admin", "branch_admin"):
+        abort(403)
+
+    row = _safe_one(
+        "SELECT Branch_ID,Status FROM appointment WHERE Appt_ID=%s",
+        (appt_id,),
+    )
+    if not row:
+        abort(404)
+    if role == "branch_admin" and row["Branch_ID"] != branch_id():
+        abort(403)
+    if row["Status"] != "Pending Approval":
+        flash("Only pending appointment requests can be approved.", "warning")
+        return redirect(url_for("main.appointments"))
+
+    if role == "chain_admin":
+        sql = """UPDATE appointment SET Status='Scheduled'
+                 WHERE Appt_ID=%s AND Status='Pending Approval'"""
+        params = (appt_id,)
+    else:
+        sql = """UPDATE appointment SET Status='Scheduled'
+                 WHERE Appt_ID=%s AND Branch_ID=%s AND Status='Pending Approval'"""
+        params = (appt_id, branch_id())
+
+    try:
+        _, changed = execute(sql, params, actor_login_id=actor_id())
+        if changed == 1:
+            flash("Appointment approved and confirmed.", "success")
+        else:
+            flash("The request was already processed. Refresh the appointment list.", "warning")
+    except mysql.connector.Error as exc:
+        current_app.logger.exception("Appointment approval failed")
+        flash(getattr(exc, "msg", "Appointment could not be approved."), "danger")
     return redirect(url_for("main.appointments"))
 
 

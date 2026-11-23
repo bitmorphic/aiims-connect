@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Sign in | AIIMS Connect{% endblock %}
+{% block title %}{{ 'Patient sign in' if portal == 'patient' else 'Staff sign in' }} | AIIMS Connect{% endblock %}
 {% block content %}
 <div class="login-page">
   <a class="login-back" href="{{ url_for('main.home') }}">← Back to home</a>
@@ -8,18 +8,24 @@
       <span class="brand-mark">+</span>
       <span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span>
     </a>
-    <p class="login-kicker">HOSPITAL NETWORK WORKSPACE</p>
-    <h1>Sign in</h1>
-    <p class="login-hint">Use the account provided by your hospital administrator.</p>
+    <p class="login-kicker">{{ 'PATIENT PORTAL' if portal == 'patient' else 'HOSPITAL STAFF PORTAL' }}</p>
+    <h1>{{ 'Welcome back' if portal == 'patient' else 'Staff sign in' }}</h1>
+    <p class="login-hint">{{ 'Sign in to request appointments and view your personal care records.' if portal == 'patient' else 'Use the account provided by your hospital administrator.' }}</p>
     <form method="post" class="login-form">
+      <input type="hidden" name="portal" value="{{ portal }}">
       <label for="username">Username</label>
       <input id="username" name="username" type="text" autocomplete="username" placeholder="Enter your username" required autofocus>
       <label for="password">Password</label>
       <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
-      <button class="button button-blue login-submit" type="submit">Sign in</button>
+      <button class="button button-blue login-submit" type="submit">Sign in <span>→</span></button>
     </form>
-    <div class="login-security">Authenticated against the hospital database.</div>
-    <small class="login-disclaimer">Academic prototype · Use synthetic demonstration accounts only.</small>
+    {% if portal == 'patient' %}
+    <div class="login-security">New to AIIMS Connect? <a href="{{ url_for('main.patient_signup') }}">Create a patient account</a></div>
+    <p class="auth-switch">Hospital staff? <a href="{{ url_for('main.login', portal='staff') }}">Staff sign in</a></p>
+    {% else %}
+    <p class="auth-switch">Looking for the patient portal? <a href="{{ url_for('main.login', portal='patient') }}">Patient sign in</a></p>
+    {% endif %}
+    <small class="login-disclaimer">Academic prototype · Use synthetic demonstration data only.</small>
   </section>
 </div>
 {% endblock %}

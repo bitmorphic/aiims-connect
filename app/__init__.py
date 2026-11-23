@@ -21,6 +21,8 @@ def create_app():
 
     from .routes import bp
     app.register_blueprint(bp)
+    from .fhir import bp as fhir_bp
+    app.register_blueprint(fhir_bp)
 
     @app.get("/healthz")
     def healthz():
