@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}FHIR Explorer | AIIMS Connect{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <span class="page-eyebrow">INTEROPERABILITY · FHIR R4</span>
+    <h1>FHIR Explorer</h1>
+    <p>Explore the imported Synthea demonstration records. These synthetic identities are separate from AIIMS patient UHIDs.</p>
+  </div>
+  <div class="table-count"><b>R4</b><small>FHIR version 4.0.1</small></div>
+</div>
+
+<section class="content-card form-card">
+  <div class="card-heading">
+    <div><span class="page-eyebrow">SYNTHETIC PATIENT DIRECTORY</span><h2>Find a patient</h2></div>
+    <span class="form-icon">⌕</span>
+  </div>
+  <form method="get" action="{{ url_for('fhir.explorer') }}" class="data-form">
+    <label class="form-span">Search by patient name or FHIR resource ID
+      <input type="search" name="q" maxlength="120" value="{{ query }}" placeholder="Enter a name or FHIR patient ID">
+    </label>
+    <div class="form-submit">
+      <button class="button button-blue" type="submit">Search patients <span>→</span></button>
+      <small>Showing up to 50 matches. Selecting a patient loads their linked clinical resources.</small>
+    </div>
+  </form>
+</section>
+
+<div class="fhir-explorer-grid">
+  <section class="content-card fhir-patient-list">
+    <div class="records-toolbar">
+      <div><span class="page-eyebrow">DIRECTORY</span><h2>Patients</h2></div>
+      <span class="table-count"><b>{{ patients|length }}</b><small>shown</small></span>
+    </div>
+    {% if patients %}
+      <div class="fhir-patient-items">
+        {% for patient in patients %}
+        <a class="fhir-patient-item {% if selected and selected.id == patient.id %}active{% endif %}"
+           href="{{ url_for('fhir.explorer', q=query, patient=patient.id) }}">
+          <span class="fhir-patient-avatar">{{ patient.name[:1]|upper }}</span>
+          <span class="fhir-patient-copy">
+            <b>{{ patient.name }}</b>
+            <small>{{ patient.gender|title }} · {{ patient.birth_date }}</small>
+            <small class="fhir-id">{{ patient.id }}</small>
+          </span>
+          <span class="fhir-patient-arrow">→</span>
+        </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state"><span>◎</span><b>No synthetic patients found</b><small>Run the FHIR importer against the demo ZIP, or change the search.</small></div>
+    {% endif %}
+  </section>
+
+  <section class="fhir-detail-column">
+    {% if selected %}
+    <section class="content-card fhir-profile-card">
+      <span class="page-eyebrow">FHIR PATIENT RESOURCE</span>
+      <h2>{{ selected.name }}</h2>
+      <p class="fhir-id">{{ selected.id }}</p>
+      <div class="fhir-profile-meta">
+        <div><small>Gender</small><b>{{ selected.gender|title }}</b></div>
+        <div><small>Date of birth</small><b>{{ selected.birth_date }}</b></div>
+        <div class="fhir-address"><small>Address in source data</small><b>{{ selected.address or 'Not recorded' }}</b></div>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <div class="records-toolbar"><div><span class="page-eyebrow">PATIENT COMPARTMENT</span><h2>Clinical record summary</h2></div></div>
+      {% if counts %}
+      <div class="fhir-count-grid">
+        {% for item in counts %}
+        <div class="fhir-count-card">
+          <b>{{ item.total }}</b>
+          <span>{{ item.resource_type }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state"><b>No linked clinical resources</b><small>This patient has no indexed patient-compartment records.</small></div>
+      {% endif %}
+    </section>
+
+    <section class="content-card">
+      <div class="records-toolbar"><div><span class="page-eyebrow">LATEST RESOURCES</span><h2>Clinical timeline</h2></div><span class="table-count"><b>{{ records|length }}</b><small>of up to 50</small></span></div>
+      {% if records %}
+      <div class="fhir-timeline">
+        {% for record in records %}
+        <article class="fhir-record">
+          <div class="fhir-record-head">
+            <div><span class="fhir-resource-type">{{ record.resource_type }}</span><h3>{{ record.label }}</h3></div>
+            <span class="status-pill">{{ record.status }}</span>
+          </div>
+          <div class="fhir-record-meta"><span>{{ record.event_date or 'Date not recorded' }}</span><span>{{ record.resource_id }}</span></div>
+          <details class="fhir-json-details">
+            <summary>View FHIR JSON</summary>
+            <pre>{{ record.json }}</pre>
+          </details>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state"><b>No clinical records to display</b><small>Resource summaries will appear here after a successful import.</small></div>
+      {% endif %}
+    </section>
+    {% else %}
+    <section class="content-card fhir-empty-panel">
+      <span class="fhir-empty-icon">FHIR</span>
+      <h2>Select a synthetic patient</h2>
+      <p>Choose a patient from the directory to view their demographic resource, resource counts and recent clinical history.</p>
+      <small>FHIR resources remain isolated from the operational AIIMS patient registry.</small>
+    </section>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
