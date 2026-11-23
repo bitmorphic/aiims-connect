@@ -52,10 +52,26 @@ def build_cleanup_plan(cursor):
         "WHERE s.Name LIKE 'Demo %' "
         "ORDER BY s.Staff_ID",
     )
-    staff_ids = sorted(set(_ids(demo_staff, "Staff_ID")))
-    staff_login_ids = sorted(set(_ids(demo_staff, "Login_ID")))
+    active_non_demo_admins = _fetch(
+        cursor,
+        "SELECT l.Login_ID, l.Username, s.Name AS Staff_Name "
+        "FROM login l JOIN staff s ON s.Staff_ID=l.Staff_ID "
+        "JOIN admin_staff a ON a.Staff_ID=s.Staff_ID "
+        "WHERE l.Is_Active=1 AND l.Role='Admin' "
+        "AND a.Access_Level IN ('Chain','Branch') "
+        "AND s.Name NOT LIKE 'Demo %' AND l.Username NOT LIKE 'demo.%' "
+        "ORDER BY l.Login_ID",
+    )
+    # Never remove the only working admin access path. If the legacy demo
+    # accounts are the only administrators, retain all demo staff and any
+    # appointments/referrals belonging to those doctors until a real admin
+    # account has been provisioned.
+    staff_cleanup_blocked = not bool(active_non_demo_admins)
+    staff_to_remove = [] if staff_cleanup_blocked else demo_staff
+    staff_ids = sorted(set(_ids(staff_to_remove, "Staff_ID")))
+    staff_login_ids = sorted(set(_ids(staff_to_remove, "Login_ID")))
     doctor_ids = sorted({
-        row["Staff_ID"] for row in demo_staff if row.get("Staff_Type") == "Doctor"
+        row["Staff_ID"] for row in staff_to_remove if row.get("Staff_Type") == "Doctor"
     })
 
     referral_clauses = []
@@ -141,12 +157,15 @@ def build_cleanup_plan(cursor):
         ("admissions for demo patients", len(admission_ids)),
         ("bills for those admissions", len(_ids(bills, "Bill_ID"))),
         ("referrals linked to demo patients/doctors", len(referral_ids)),
-        ("legacy Demo staff records", len(staff_ids)),
-        ("legacy Demo staff login accounts", len(staff_login_ids)),
+        ("legacy Demo staff records eligible for removal", len(staff_ids)),
+        ("legacy Demo staff logins eligible for removal", len(staff_login_ids)),
+        ("active non-demo administrator accounts preserved", len(active_non_demo_admins)),
     ])
     return {
         "patient_logins": patient_logins,
         "demo_staff": demo_staff,
+        "active_non_demo_admins": active_non_demo_admins,
+        "staff_cleanup_blocked": staff_cleanup_blocked,
         "patient_login_ids": patient_login_ids,
         "patient_uhids": patient_uhids,
         "staff_ids": staff_ids,
