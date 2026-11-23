@@ -37,16 +37,17 @@ def build_cleanup_plan(cursor):
     """Return exact legacy-demo row identifiers and counts without writing."""
     patient_logins = _fetch(
         cursor,
-        "SELECT Login_ID, Username, Patient_UHID FROM login "
-        "WHERE Role='Patient' AND Username LIKE 'demo.patient.%' "
-        "ORDER BY Login_ID",
+        "SELECT l.Login_ID, l.Username, l.Patient_UHID, p.Name AS Patient_Name "
+        "FROM login l LEFT JOIN patient p ON p.UHID=l.Patient_UHID "
+        "WHERE l.Role='Patient' AND l.Username LIKE 'demo.patient.%' "
+        "ORDER BY l.Login_ID",
     )
     patient_login_ids = _ids(patient_logins, "Login_ID")
     patient_uhids = sorted(set(_ids(patient_logins, "Patient_UHID")))
 
     demo_staff = _fetch(
         cursor,
-        "SELECT s.Staff_ID, s.Staff_Type, l.Login_ID, l.Username "
+        "SELECT s.Staff_ID, s.Staff_Type, s.Name AS Staff_Name, l.Login_ID, l.Username "
         "FROM staff s JOIN login l ON l.Staff_ID=s.Staff_ID "
         "WHERE s.Name LIKE 'Demo %' "
         "ORDER BY s.Staff_ID",
@@ -144,6 +145,8 @@ def build_cleanup_plan(cursor):
         ("legacy Demo staff login accounts", len(staff_login_ids)),
     ])
     return {
+        "patient_logins": patient_logins,
+        "demo_staff": demo_staff,
         "patient_login_ids": patient_login_ids,
         "patient_uhids": patient_uhids,
         "staff_ids": staff_ids,
@@ -231,6 +234,15 @@ def main():
         print("\nLegacy demo cleanup preview:")
         for label, count in plan["counts"].items():
             print(f"  {label:54} {count:>8,}")
+
+        if plan["patient_logins"]:
+            print("\\nPatient accounts selected:")
+            for row in plan["patient_logins"]:
+                print(f"  {row['Username']} -> {row.get('Patient_UHID') or '(no UHID)'} | {row.get('Patient_Name') or '(name unavailable)'}")
+        if plan["demo_staff"]:
+            print("\\nStaff accounts selected:")
+            for row in plan["demo_staff"]:
+                print(f"  {row['Username']} -> {row['Staff_Name']} | {row['Staff_Type']} #{row['Staff_ID']}")
         if plan["fhir_resource_count"] is None:
             print("\nFHIR store: table is not installed yet; no FHIR rows will be touched.")
         else:
