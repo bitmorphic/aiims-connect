@@ -226,7 +226,7 @@ CREATE TABLE `appointment` (
   `Appt_Date` date NOT NULL,
   `Time_Slot` time NOT NULL,
   `Token_No` int unsigned NOT NULL,
-  `Status` varchar(15) NOT NULL DEFAULT 'Scheduled',
+  `Status` varchar(20) NOT NULL DEFAULT 'Scheduled',
   `Referral_ID` int unsigned DEFAULT NULL,
   `Created_At` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `Slot_Key` varchar(64) GENERATED ALWAYS AS (if((`Status` = _utf8mb4'Cancelled'),NULL,concat_ws(_utf8mb4'|',`Doctor_ID`,`Appt_Date`,`Time_Slot`))) STORED,
