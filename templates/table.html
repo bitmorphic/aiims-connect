@@ -16,7 +16,7 @@
     <label>Doctor<select name="doctor_id" required><option value="">Choose a doctor</option>{% for d in doctors %}<option value="{{ d.Staff_ID }}">{{ d.Name }} · {{ d.Specialization }} · {{ d.Branch_Name }}</option>{% endfor %}</select></label>
     <label>Appointment date<input type="date" name="appt_date" min="{{ (now_date if now_date is defined else '') }}" required></label>
     <label>OPD time slot<select name="time_slot" required><option value="">Choose a 30-minute slot</option>{% for t in ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','14:00','14:30','15:00','15:30','16:00','16:30'] %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select></label>
-    <div class="form-submit"><button class="button button-blue" type="submit">Book appointment <span>→</span></button><small>Doctor branch, slot uniqueness and token are enforced by MySQL.</small></div>
+    <div class="form-submit"><button class="button button-blue" type="submit">{{ 'Request appointment' if session.role == 'patient' else 'Book appointment' }} <span>→</span></button><small>{{ 'A hospital administrator must approve this request before it is confirmed.' if session.role == 'patient' else 'Doctor branch, slot uniqueness and token are enforced by MySQL.' }}</small></div>
   </form>
 </section>
 {% endif %}
