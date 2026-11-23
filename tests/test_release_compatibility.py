@@ -1,13 +1,16 @@
 import unittest
 from unittest.mock import patch
 
+import mysql.connector
+
 from app import create_app
 
 
 def missing_table_error():
-    error = RuntimeError("Table 'aiims_connect.fhir_resource' doesn't exist")
-    error.errno = 1146
-    return error
+    return mysql.connector.Error(
+        msg="Table 'aiims_connect.fhir_resource' doesn't exist",
+        errno=1146,
+    )
 
 
 class ReleaseCompatibilityTests(unittest.TestCase):
