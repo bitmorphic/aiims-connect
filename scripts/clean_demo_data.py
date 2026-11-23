@@ -236,11 +236,11 @@ def main():
             print(f"  {label:54} {count:>8,}")
 
         if plan["patient_logins"]:
-            print("\\nPatient accounts selected:")
+            print("\nPatient accounts selected:")
             for row in plan["patient_logins"]:
                 print(f"  {row['Username']} -> {row.get('Patient_UHID') or '(no UHID)'} | {row.get('Patient_Name') or '(name unavailable)'}")
         if plan["demo_staff"]:
-            print("\\nStaff accounts selected:")
+            print("\nStaff accounts selected:")
             for row in plan["demo_staff"]:
                 print(f"  {row['Username']} -> {row['Staff_Name']} | {row['Staff_Type']} #{row['Staff_ID']}")
         if plan["fhir_resource_count"] is None:
