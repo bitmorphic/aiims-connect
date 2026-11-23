@@ -12,6 +12,10 @@ AIIMS Connect models a hospital network in which a patient registers once and re
 
 The central database is MySQL. A Flask web application provides role-aware pages for patient services, OPD scheduling, inpatient admissions, ward capacity, inter-branch referrals, prescriptions, billing and reporting.
 
+### FHIR-first clinical data
+
+The imported Synthea FHIR R4 dataset is the primary source of synthetic clinical histories for the interoperability demonstration. Patient demographics and clinical resources stay in the dedicated `fhir_resource` store and are explored through the staff-only FHIR API. They are not copied into the operational AIIMS UHID registry or exposed through the patient portal. The operational tables remain available for hospital configuration, staff access, new patient registration and appointment workflows; they are not pre-populated with fake patient/clinical demo rows.
+
 ### The problem this project addresses
 
 A patient may visit more than one campus over time. The system therefore needs to preserve one patient identity across the network without losing the branch context of each care event. It must also prevent conflicting actions such as booking the same doctor's active time slot twice or assigning more patients than a ward can accommodate. Multi-step actions such as admission, discharge and referral acceptance need consistent database updates.
@@ -200,19 +204,23 @@ In MySQL Workbench, create an empty database named `aiims_connect`, select it, a
 
 This is a read-only schema check. It verifies the expected tables, views, procedures and triggers. It does not create, drop, seed or migrate database objects.
 
-### 6. Optional: preview synthetic demo data
+### 6. Preview legacy demo-data cleanup
+
+The old synthetic data seeder is disabled. For an existing database, the cleanup utility identifies only patient accounts with the legacy `demo.patient.*` username pattern and linked staff created with a `Demo ` name. It removes their linked appointments, prescriptions, admissions, bills and referrals. It preserves branches, departments, wards, unrelated accounts, audit events (with demo actor references anonymised), and every FHIR resource.
+
+First preview the exact candidates:
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\seed_demo.py
+.\.venv\Scripts\python.exe scripts\clean_demo_data.py
 ```
 
-The default is preview-only. Review the proposed changes before applying them. To apply the synthetic top-up:
+After reviewing the output and taking a restorable database backup, apply the cleanup explicitly:
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\seed_demo.py --apply
+.\.venv\Scripts\python.exe scripts\clean_demo_data.py --apply --backup-confirmed --confirm "REMOVE ONLY LEGACY AIIMS CONNECT DEMO DATA"
 ```
 
-Run the seeder only against a database containing synthetic demonstration/test records. It is not a migration utility and must never be applied to real patient data.
+This cleanup intentionally does not attempt to guess which unmarked rows are demo data. It does not delete records from the FHIR store. Never run it on a database containing real patient data without first reviewing the preview and backup.
 
 ### 7. Start the application
 
@@ -229,21 +237,21 @@ For an existing populated Railway database, take a backup and apply these migrat
 1. [`2026_11_patient_appointment_approval.sql`](sql/migrations/2026_11_patient_appointment_approval.sql) widens the appointment status field and permits `Pending Approval` without rewriting existing appointment rows. Run once.
 2. [`2026_11_fhir_interoperability.sql`](sql/migrations/2026_11_fhir_interoperability.sql) creates the isolated FHIR import and resource tables. It uses `CREATE TABLE IF NOT EXISTS` and can be reapplied safely.
 
-Select the Railway application database in Workbench before executing either file. Confirm both FHIR tables exist before deploying the FHIR API. The migrations do not import the Synthea ZIP.
+Select the Railway application database in Workbench before executing either file. Confirm both FHIR tables exist before deploying the FHIR API. The migrations do not import the Synthea ZIP. After a restorable backup, run the legacy cleanup preview and (only after reviewing its candidate counts) the guarded cleanup command in the setup section. This removes only rows identifiable as belonging to the retired demo seeder; it does not alter the FHIR store.
 
 ## FHIR R4 interoperability
 
-AIIMS Connect includes a small, read-only FHIR R4 gateway alongside its existing relational workflows. This is an academic interoperability demonstration, not a complete or certified FHIR server.
+AIIMS Connect uses an isolated, read-only FHIR R4 store as the primary clinical-history dataset for the interoperability demonstration. The existing relational workflows remain available for hospital operations. This is an academic interoperability demonstration, not a complete or certified FHIR server.
 
 ### What is stored
 
 The supplied Synthea ZIP contains 115 FHIR Bundles, 113 synthetic Patient resources and 130,703 resource entries across 24 resource types. The importer preserves each original FHIR resource as JSON in `fhir_resource`; `fhir_import_batch` records the source archive hash and import status. FHIR resource IDs are kept distinct from AIIMS UHIDs, and patient-compartment indexes are derived from explicit Patient references inside the Bundles.
 
-The FHIR tables are intentionally separate from the operational `patient`, `appointment`, `prescription`, `admission` and `billing` tables. No automatic matching or merging of Synthea records with AIIMS patients occurs. Patient accounts cannot access this unlinked synthetic test dataset; authenticated hospital staff can use the API for demonstration and integration testing.
+The FHIR tables are intentionally separate from the operational `patient`, `appointment`, `prescription`, `admission` and `billing` tables. No automatic matching or merging of Synthea records with AIIMS UHIDs occurs. The legacy seeded operational demo records are no longer part of the intended baseline. New account registrations and appointment requests use the operational tables; synthetic historical clinical data remains in FHIR. Patient accounts cannot access this unlinked synthetic test dataset; authenticated hospital staff can use the API for demonstration and integration testing.
 
 ### Import the dataset
 
-The ZIP is not stored in GitHub and is not loaded automatically during app startup. In this supplied archive, the ZIP is about 28.8 MiB and its uncompressed JSON Bundle files total about 385.5 MiB, before MySQL row/index overhead. Check available Railway database storage before importing the complete sample. Check available Railway database storage before importing the complete sample. After applying the FHIR SQL migration and configuring the local `.env` to point to the intended MySQL database, run:
+The ZIP is not stored in GitHub and is not loaded automatically during app startup. In this supplied archive, the ZIP is about 28.8 MiB and its uncompressed JSON Bundle files total about 385.5 MiB, before MySQL row/index overhead. Check available Railway database storage before importing the complete sample; MySQL row, JSON and index overhead will increase the on-disk footprint. After applying the FHIR SQL migration and configuring the local `.env` to point to the intended MySQL database, run:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\import_fhir.py "C:\path\to\synthea_sample_data_fhir_latest.zip" --dry-run
@@ -310,7 +318,7 @@ A typical end-to-end demonstration follows this sequence:
 6. Create a referral to another branch, accept it at the destination, and verify the appointment created for that branch.
 7. Review branch occupancy and revenue in the reporting workspace.
 
-These workflows were exercised against the hosted demo database during project validation using synthetic records.
+The operational workflow is retained for new registrations and staff-managed care activity. After removing the legacy demo records, rehearse each workflow with newly created academic test accounts before presenting it; this repository change does not claim that the live Railway database has already been cleaned or revalidated.
 
 ### Tests
 
