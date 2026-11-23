@@ -410,6 +410,20 @@ def appointments():
         if not patient_uhid or not doctor_id or not appt_date or not _time_slot_is_valid(time_slot):
             flash("Choose a patient, doctor, future date and a valid 30-minute OPD slot.", "warning")
             return redirect(url_for("main.appointments"))
+        if role == "patient":
+            approval_constraint = _safe_one(
+                """SELECT CHECK_CLAUSE
+                   FROM information_schema.CHECK_CONSTRAINTS
+                   WHERE CONSTRAINT_SCHEMA=DATABASE()
+                     AND CONSTRAINT_NAME='chk_appt_status'"""
+            )
+            check_clause = str((approval_constraint or {}).get("CHECK_CLAUSE", "")).lower()
+            if "pending approval" not in check_clause:
+                flash(
+                    "Patient appointment requests are temporarily unavailable while the database approval migration is pending. Existing hospital appointments are unaffected.",
+                    "warning",
+                )
+                return redirect(url_for("main.appointments"))
         if role in ("branch_admin", "receptionist"):
             doctor_branch = _safe_one(
                 "SELECT Branch_ID FROM staff WHERE Staff_ID=%s AND Staff_Type='Doctor'",
