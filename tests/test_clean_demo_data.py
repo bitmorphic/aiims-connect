@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.clean_demo_data import apply_cleanup
+from scripts.clean_demo_data import apply_cleanup, _staff_cleanup_targets
 
 
 class RecordingCursor:
@@ -13,6 +13,20 @@ class RecordingCursor:
 
 
 class DemoCleanupTests(unittest.TestCase):
+    def test_legacy_staff_is_retained_when_no_real_admin_remains(self):
+        demo_staff = [{"Staff_ID": 20, "Staff_Type": "Doctor", "Login_ID": 11}]
+        selected, blocked = _staff_cleanup_targets(demo_staff, [])
+        self.assertEqual(selected, [])
+        self.assertTrue(blocked)
+
+    def test_legacy_staff_can_be_removed_when_non_demo_admin_is_active(self):
+        demo_staff = [{"Staff_ID": 20, "Staff_Type": "Doctor", "Login_ID": 11}]
+        selected, blocked = _staff_cleanup_targets(
+            demo_staff, [{"Login_ID": 2, "Username": "hospital.admin"}]
+        )
+        self.assertEqual(selected, demo_staff)
+        self.assertFalse(blocked)
+
     def test_cleanup_deletes_only_demo_linked_ids_and_preserves_fhir(self):
         cursor = RecordingCursor()
         plan = {
