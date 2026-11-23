@@ -59,7 +59,7 @@ Key design decisions:
 
 ### Entity-relationship diagram
 
-The ER diagram below represents the current 15-entity schema.
+The ER diagram below represents the 15-table operational schema. Two additional FHIR integration tables store imported resources and import metadata separately.
 
 <div align="center">
   <img src="tests/er-diagram.png" alt="ER DIAGRAM">
@@ -70,7 +70,7 @@ The ER diagram below represents the current 15-entity schema.
 
 | Database object | Count | Purpose |
 | --- | ---: | --- |
-| Tables | 15 | Core patient, staff, branch, appointment, admission, billing and referral records. |
+| Tables | 17 | 15 operational tables plus 2 isolated FHIR import/resource tables. |
 | Views | 7 | Role-oriented data and aggregated patient-history, ward, occupancy, referral and revenue information. |
 | Stored procedures | 11 | Encapsulate database workflows such as booking, admission, discharge, billing and referral transitions. |
 | Triggers | 14 | Enforce or maintain selected data rules, including bed-capacity updates and audit entries. |
@@ -82,7 +82,7 @@ The seven views in the current schema are `branch_revenue_view`, `branch_ward_vi
 | Concept | How it is used in the project |
 | --- | --- |
 | Relational modelling | Primary keys, foreign keys and branch-aware relationships connect the network data. |
-| EER specialisation | The current schema models Staff subtypes as Doctor, Receptionist and Admin Staff. The Patient OPD/IPD subtypes from the original synopsis are not part of the implemented 15-table schema. |
+| EER specialisation | The operational schema models Staff subtypes as Doctor, Receptionist and Admin Staff. The Patient OPD/IPD subtypes from the original synopsis are not part of the implemented 15-table operational schema. |
 | Normalisation | The schema separates patient, staff, login, branch and care-event data to reduce duplication. |
 | Transactions | Multi-step operations are grouped so related changes can commit or roll back together. |
 | Concurrency control | Database locking and uniqueness rules protect shared resources such as doctor time slots and ward capacity. |
@@ -126,14 +126,17 @@ aiims-connect/
 ├── app/
 │   ├── __init__.py
 │   ├── db.py
-│   └── routes.py
+│   ├── routes.py
+│   └── fhir.py
 ├── scripts/
+│   ├── import_fhir.py
 │   ├── init_db.py
 │   ├── prepare_railway_schema.py
 │   └── seed_demo.py
 ├── sql/
 │   ├── README.md
-│   └── schema.sql
+│   ├── schema.sql
+│   └── migrations/
 ├── static/
 │   ├── app.js
 │   └── style.css
@@ -218,9 +221,51 @@ Run the seeder only against a database containing synthetic demonstration/test r
 
 Open [http://127.0.0.1:5000](http://127.0.0.1:5000). Keep the terminal running while using the application. Sign in with an account provisioned in the database.
 
-## Existing Railway database migration
+## Existing Railway database migrations
 
-For an existing populated Railway database, run [sql/migrations/2026_11_patient_appointment_approval.sql](sql/migrations/2026_11_patient_appointment_approval.sql) once in MySQL Workbench **before deploying the patient self-service update**. It widens the appointment status column and permits the `Pending Approval` state. It preserves existing appointments and patient data. Do not rerun it after it succeeds.
+For an existing populated Railway database, take a backup and apply these migrations in MySQL Workbench before deploying the current branch:
+
+1. [`2026_11_patient_appointment_approval.sql`](sql/migrations/2026_11_patient_appointment_approval.sql) widens the appointment status field and permits `Pending Approval` without rewriting existing appointment rows. Run once.
+2. [`2026_11_fhir_interoperability.sql`](sql/migrations/2026_11_fhir_interoperability.sql) creates the isolated FHIR import and resource tables. It uses `CREATE TABLE IF NOT EXISTS` and can be reapplied safely.
+
+Select the Railway application database in Workbench before executing either file. Confirm both FHIR tables exist before deploying the FHIR API. The migrations do not import the Synthea ZIP.
+
+## FHIR R4 interoperability
+
+AIIMS Connect includes a small, read-only FHIR R4 gateway alongside its existing relational workflows. This is an academic interoperability demonstration, not a complete or certified FHIR server.
+
+### What is stored
+
+The supplied Synthea ZIP contains 115 FHIR Bundles, 113 synthetic Patient resources and 130,703 resource entries across 24 resource types. The importer preserves each original FHIR resource as JSON in `fhir_resource`; `fhir_import_batch` records the source archive hash and import status. FHIR resource IDs are kept distinct from AIIMS UHIDs, and patient-compartment indexes are derived from explicit Patient references inside the Bundles.
+
+The FHIR tables are intentionally separate from the operational `patient`, `appointment`, `prescription`, `admission` and `billing` tables. No automatic matching or merging of Synthea records with AIIMS patients occurs. Patient accounts cannot access this unlinked synthetic test dataset; authenticated hospital staff can use the API for demonstration and integration testing.
+
+### Import the dataset
+
+The ZIP is not stored in GitHub and is not loaded automatically during app startup. After applying the FHIR SQL migration and configuring the local `.env` to point to the intended MySQL database, run:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\import_fhir.py "C:\path\to\synthea_sample_data_fhir_latest.zip" --dry-run
+.\.venv\Scripts\python.exe scripts\import_fhir.py "C:\path\to\synthea_sample_data_fhir_latest.zip"
+```
+
+The dry run parses the archive and reports Bundle/resource totals without opening a database connection. The actual importer writes in small batches, tracks the SHA-256 of the ZIP, and skips an archive that has already completed successfully. Use `--force` only when you intentionally need to reprocess the exact same ZIP. It is safe to rerun after a partial failure because resources are upserted by FHIR resource type and ID.
+
+For a Railway import from Windows, configure `.env` with the Railway MySQL **public TCP proxy** host and port plus the database username, password and database name from Railway. Do not use Railway's private hostname from a local PC. Keep these credentials in `.env`; never commit them. The ZIP contains synthetic US-based records and US Core profiles; it is a test dataset, not AIIMS patient data or an India-specific terminology pack.
+
+### FHIR API
+
+The CapabilityStatement is available at:
+
+- `GET /fhir/metadata` — FHIR version and the API's declared read/search capabilities (no login required).
+- `GET /fhir/Patient?_count=5` — search patients (hospital staff login required).
+- `GET /fhir/Patient/{id}` — read a Patient resource by FHIR logical ID.
+- `GET /fhir/Observation?patient={patient-fhir-id}&_count=20` — find that patient's observations.
+- `GET /fhir/Condition?patient={patient-fhir-id}` and `GET /fhir/MedicationRequest?patient={patient-fhir-id}` — example patient-compartment searches.
+
+Resource responses use `application/fhir+json`. Search responses are FHIR `Bundle` resources of type `searchset`; errors use `OperationOutcome`. Search supports the parameters declared by the CapabilityStatement: `_id`, `_count`, Patient `name`/`gender`/`birthdate`/`identifier`, and applicable `patient`/`code`/`status` searches. Server-side paging uses `_offset` in the next link, and `_summary=count` returns only the total.
+
+FHIR resource reads and searches require an authenticated staff account. The Patient portal is deliberately denied access to the synthetic records because they have no approved mapping to AIIMS UHIDs. This first iteration is read-only: it does not implement FHIR create/update/delete, transaction processing, terminology validation or full conformance testing. It demonstrates the FHIR R4 resource model and REST read/search interactions without claiming to be a production FHIR server.
 
 ## Railway deployment
 
