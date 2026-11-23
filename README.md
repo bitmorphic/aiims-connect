@@ -141,6 +141,7 @@ aiims-connect/
 │   ├── app.js
 │   └── style.css
 ├── templates/
+│   └── fhir_explorer.html
 ├── tests/
 ├── .env.example
 ├── Procfile
@@ -258,12 +259,13 @@ For a Railway import from Windows, configure `.env` with the Railway MySQL **pub
 The CapabilityStatement is available at:
 
 - `GET /fhir/metadata` — FHIR version and the API's declared read/search capabilities (no login required).
+- `/fhir/explorer` — staff-only browser for synthetic patient demographics, resource counts and expandable clinical-resource JSON.
 - `GET /fhir/Patient?_count=5` — search patients (hospital staff login required).
 - `GET /fhir/Patient/{id}` — read a Patient resource by FHIR logical ID.
 - `GET /fhir/Observation?patient={patient-fhir-id}&_count=20` — find that patient's observations.
 - `GET /fhir/Condition?patient={patient-fhir-id}` and `GET /fhir/MedicationRequest?patient={patient-fhir-id}` — example patient-compartment searches.
 
-Resource responses use `application/fhir+json`. Search responses are FHIR `Bundle` resources of type `searchset`; errors use `OperationOutcome`. Search supports the parameters declared by the CapabilityStatement: `_id`, `_count`, Patient `name`/`gender`/`birthdate`/`identifier`, and applicable `patient`/`code`/`status` searches. Server-side paging uses `_offset` in the next link, and `_summary=count` returns only the total.
+Resource responses use `application/fhir+json`. Search responses are FHIR `Bundle` resources of type `searchset`; errors use `OperationOutcome`. Search supports the parameters declared by the CapabilityStatement: `_id`, `_count`, Patient `name`/`gender`/`birthdate`/`identifier`, and applicable `patient`/`code`/`status`/`clinical-status`/`verification-status` searches. Server-side paging uses `_offset` in the next link, and `_summary=count` returns only the total.
 
 FHIR resource reads and searches require an authenticated staff account. The Patient portal is deliberately denied access to the synthetic records because they have no approved mapping to AIIMS UHIDs. This first iteration is read-only: it does not implement FHIR create/update/delete, transaction processing, terminology validation or full conformance testing. It demonstrates the FHIR R4 resource model and REST read/search interactions without claiming to be a production FHIR server.
 
