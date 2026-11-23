@@ -349,3 +349,5 @@ The smoke tests do not replace integration testing against MySQL. Concurrency, r
 - All India Institute of Medical Sciences: [aiims.edu](https://www.aiims.edu/)
 - Project synopsis prepared for CSBB 204, Department of Computer Science and Engineering, NIT Delhi.
 - ER diagram prepared for the current AIIMS Connect schema.
+- Synthea synthetic healthcare data and sample downloads: [Synthea downloads](https://synthetichealth.github.io/downloads.html) and [Synthea project](https://github.com/synthetichealth/synthea).
+- HL7 FHIR R4 specification: [HTTP RESTful API](https://www.hl7.org/fhir/R4/http.html) and [Bundle resource](https://www.hl7.org/fhir/R4/bundle.html).
