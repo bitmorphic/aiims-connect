@@ -23,14 +23,14 @@ class RepositorySmokeTests(unittest.TestCase):
 
     def test_branch_staff_cannot_book_another_branch_doctor(self):
         routes = self.read("app", "routes.py")
-        self.assertIn("doctor_branch[\"Branch_ID\"] != branch_id()", routes)
+        self.assertIn("doctor_record[\"Branch_ID\"] != branch_id()", routes)
 
     def test_public_landing_page_is_the_root_view(self):
         routes = self.read("app", "routes.py")
         landing = self.read("templates", "landing.html")
         self.assertIn('@bp.route(\"/\")', routes)
         self.assertIn("One patient.", landing)
-        self.assertIn("Every branch.", landing)
+        self.assertIn("One patient · Every branch", landing)
 
     def test_database_verifier_is_read_only(self):
         verifier = self.read("scripts", "init_db.py")
@@ -53,6 +53,26 @@ class RepositorySmokeTests(unittest.TestCase):
         seeder = self.read("scripts", "seed_demo.py")
         self.assertIn("Demo data seeding is disabled", seeder)
         self.assertNotIn("RegisterPatient", seeder)
+
+    def test_doctor_roster_migration_and_workspace_exist(self):
+        migration = self.read("sql", "migrations", "2026_11_demo_doctor_roster.sql")
+        self.assertIn("Demo Dr. Aditi Sharma", migration)
+        self.assertIn("Demo Dr. Meera Rathore", migration)
+        self.assertIn("WHERE NOT EXISTS", migration)
+        self.assertTrue((ROOT / "templates" / "doctors.html").exists())
+        routes = self.read("app", "routes.py")
+        self.assertIn('@bp.route("/doctors", methods=["GET", "POST"])', routes)
+        self.assertIn('@bp.get("/appointments/availability")', routes)
+
+    def test_workspace_ui_includes_fhir_first_architecture_and_accessible_mobile_nav(self):
+        base = self.read("templates", "base.html")
+        dashboard = self.read("templates", "dashboard.html")
+        landing = self.read("templates", "landing.html")
+        self.assertIn('data-mobile-nav', base)
+        self.assertIn("FHIR clinical records", base)
+        self.assertIn("FHIR clinical records", dashboard)
+        self.assertIn("FHIR R4 clinical histories", landing)
+        self.assertIn("Not real AIIMS records", landing)
 
 
 if __name__ == "__main__":

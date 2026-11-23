@@ -1,31 +1,50 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Patient sign in' if portal == 'patient' else 'Staff sign in' }} | AIIMS Connect{% endblock %}
 {% block content %}
-<div class="login-page">
-  <a class="login-back" href="{{ url_for('main.home') }}">← Back to home</a>
-  <section class="simple-login-card">
-    <a class="site-brand login-brand" href="{{ url_for('main.home') }}">
-      <span class="brand-mark">+</span>
-      <span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span>
-    </a>
-    <p class="login-kicker">{{ 'PATIENT PORTAL' if portal == 'patient' else 'HOSPITAL STAFF PORTAL' }}</p>
-    <h1>{{ 'Welcome back' if portal == 'patient' else 'Staff sign in' }}</h1>
-    <p class="login-hint">{{ 'Sign in to request appointments and view your personal care records.' if portal == 'patient' else 'Use the account provided by your hospital administrator.' }}</p>
-    <form method="post" class="login-form">
-      <input type="hidden" name="portal" value="{{ portal }}">
-      <label for="username">Username</label>
-      <input id="username" name="username" type="text" autocomplete="username" placeholder="Enter your username" required autofocus>
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
-      <button class="button button-blue login-submit" type="submit">Sign in <span>→</span></button>
-    </form>
-    {% if portal == 'patient' %}
-    <div class="login-security">New to AIIMS Connect? <a href="{{ url_for('main.patient_signup') }}">Create a patient account</a></div>
-    <p class="auth-switch">Hospital staff? <a href="{{ url_for('main.login', portal='staff') }}">Staff sign in</a></p>
-    {% else %}
-    <p class="auth-switch">Looking for the patient portal? <a href="{{ url_for('main.login', portal='patient') }}">Patient sign in</a></p>
-    {% endif %}
-    <small class="login-disclaimer">Academic prototype · Use synthetic demonstration data only.</small>
-  </section>
+<div class="login-page premium-login-page">
+  <a class="login-back" href="{{ url_for('main.home') }}">← Back to AIIMS Connect</a>
+  <div class="login-layout premium-login-layout">
+    <section class="login-story">
+      <a class="site-brand site-brand-light" href="{{ url_for('main.home') }}">
+        <span class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg></span>
+        <span>AIIMS <b>Connect</b><small>HOSPITAL NETWORK</small></span>
+      </a>
+      <div class="login-orbit" aria-hidden="true"><i></i><i></i><i></i><b>+</b></div>
+      <div class="login-story-copy">
+        <span class="eyebrow eyebrow-light"><i class="eyebrow-dot"></i>{{ 'PATIENT PORTAL' if portal == 'patient' else 'HOSPITAL STAFF WORKSPACE' }}</span>
+        <h1>{{ 'Your care journey,' if portal == 'patient' else 'One connected' }}<br><em>{{ 'connected across branches.' if portal == 'patient' else 'hospital network.' }}</em></h1>
+        <p>{{ 'Request appointments and review your operational patient profile and available hospital records from one secure portal.' if portal == 'patient' else 'Coordinate patients, doctor rosters, branch operations and interoperable clinical-history data from a role-aware workspace.' }}</p>
+      </div>
+      <div class="login-story-bottom">
+        <span>R4</span><span class="login-story-line"></span>
+        <div><b>FHIR interoperability</b><small>Standardised synthetic clinical history</small></div>
+        <span class="login-story-line"></span><span>MySQL operations</span>
+      </div>
+    </section>
+
+    <section class="login-form-side">
+      <div class="login-card">
+        <span class="login-card-mark"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg></span>
+        <p class="form-eyebrow">{{ 'PATIENT SERVICES' if portal == 'patient' else 'STAFF ACCESS' }}</p>
+        <h2>{{ 'Welcome back' if portal == 'patient' else 'Sign in to workspace' }}</h2>
+        <p class="login-hint">{{ 'Use your patient account to request OPD appointments and view your profile.' if portal == 'patient' else 'Sign in with the account created by your hospital administrator.' }}</p>
+        <form method="post" class="login-form">
+          <input type="hidden" name="portal" value="{{ portal }}">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" placeholder="Enter your username" required autofocus>
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+          <button class="button button-blue login-submit" type="submit">Sign in securely <span>→</span></button>
+        </form>
+        {% if portal == 'patient' %}
+        <div class="login-security">New to AIIMS Connect? <a href="{{ url_for('main.patient_signup') }}">Create a patient account</a></div>
+        <p class="auth-switch">Hospital staff? <a href="{{ url_for('main.login', portal='staff') }}">Staff sign in</a></p>
+        {% else %}
+        <p class="auth-switch">Looking for patient services? <a href="{{ url_for('main.login', portal='patient') }}">Patient sign in</a></p>
+        {% endif %}
+        <small class="login-disclaimer">Academic prototype · Synthetic demonstration data only · Not for clinical use</small>
+      </div>
+    </section>
+  </div>
 </div>
 {% endblock %}

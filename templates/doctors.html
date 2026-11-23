@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Doctor roster | AIIMS Connect{% endblock %}
+{% block content %}
+<div class="workspace-page">
+  <section class="workspace-page-heading">
+    <div><span class="page-eyebrow">MASTER DATA · CARE TEAM</span><h1>Doctor roster</h1><p>Manage the clinicians available for OPD booking at each hospital branch.</p></div>
+    <div class="heading-context-chip"><span class="status-dot"></span><span><b>{{ roster|length }}</b><small>Doctors on roster</small></span></div>
+  </section>
+
+  <section class="doctor-roster-intro">
+    <div class="doctor-roster-intro-copy">
+      <span class="page-eyebrow">WHY THIS MATTERS</span>
+      <h2>Every appointment needs a real roster entry</h2>
+      <p>Doctors are stored as Staff records with a Doctor subtype, linked to a branch and department. Only rostered doctors appear in appointment and referral scheduling.</p>
+      <div class="doctor-roster-intro-points"><span><i>01</i> Branch assignment</span><span><i>02</i> Department mapping</span><span><i>03</i> OPD scheduling</span></div>
+    </div>
+    <div class="doctor-roster-intro-art"><div class="roster-art-orbit"></div><div class="roster-art-card"><span>CLINICAL TEAM</span><b>{{ roster|length }}</b><small>Doctors configured</small><i>FHIR R4 · OPERATIONAL DIRECTORY</i></div></div>
+  </section>
+
+  <section class="content-card doctor-create-card" id="doctor-create">
+    <div class="form-card-heading">
+      <div><span class="page-eyebrow">NEW ROSTER ENTRY</span><h2>Add a doctor</h2><p>Use clearly marked demonstration clinicians for an academic environment.</p></div>
+      <span class="form-icon"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg></span>
+    </div>
+    <form method="post" class="doctor-create-form">
+      <label>Doctor name<input name="name" maxlength="100" required placeholder="e.g. Demo Dr. Aditi Sharma"></label>
+      <label>Date of birth<input name="dob" type="date" max="{{ today }}" required></label>
+      <label>Contact phone<input name="phone" maxlength="15" required placeholder="10-digit demo number"></label>
+      {% if not branch_locked %}
+      <label>Hospital branch<select name="branch_id" id="doctor-branch" required><option value="">Select branch</option>{% for b in branches %}<option value="{{ b.Branch_ID }}">{{ b.Branch_Name }} · {{ b.City }}</option>{% endfor %}</select></label>
+      {% else %}
+      <input type="hidden" name="branch_id" value="{{ branches[0].Branch_ID }}">
+      <label>Hospital branch<input value="{{ branches[0].Branch_Name }} · {{ branches[0].City }}" disabled></label>
+      {% endif %}
+      <label>Department<select name="dept_id" id="doctor-department" required><option value="">Choose branch first</option>{% for d in departments %}<option value="{{ d.Dept_ID }}" data-branch="{{ d.Branch_ID }}">{{ d.Dept_Name }} · {{ d.Branch_Name }}</option>{% endfor %}</select></label>
+      <label>Specialization<input name="specialization" maxlength="80" required placeholder="e.g. General Medicine"></label>
+      <label>Qualification<input name="qualification" maxlength="80" required placeholder="e.g. MBBS, MD"></label>
+      <label>Consultation fee (₹)<input name="consultation_fee" type="number" min="0" max="99999999.99" step="0.01" required placeholder="650.00"></label>
+      <div class="doctor-create-footer">
+        <div><span class="doctor-demo-label">DEMO DATA</span><small>Use fictional names and contact details. This roster is for academic demonstration, not a real clinical directory.</small></div>
+        <button class="button button-blue" type="submit">Add to doctor roster <span>→</span></button>
+      </div>
+    </form>
+  </section>
+
+  <section class="doctor-roster-list-section">
+    <div class="section-heading-line"><div><span class="page-eyebrow">ACTIVE DIRECTORY</span><h2>Doctors by branch</h2><p>Each doctor is linked to one branch and one department.</p></div><span class="doctor-roster-total">{{ roster|length }} <small>total</small></span></div>
+    {% if roster %}
+    <div class="doctor-roster-grid">
+      {% for d in roster %}
+      <article class="doctor-roster-card">
+        <div class="doctor-roster-card-top"><span class="doctor-avatar">{{ d.Name[:1]|upper }}</span><span class="doctor-demo-label">ROSTERED</span></div>
+        <h3>{{ d.Name }}</h3><p>{{ d.Specialization }}</p>
+        <div class="doctor-roster-card-meta"><span>{{ d.Dept_Name }}</span><span>{{ d.Branch_Name }}</span></div>
+        <div class="doctor-roster-card-footer"><span>{{ d.Qualification }}</span><b>₹{{ '%.2f'|format(d.Consultation_Fee|float) }}</b></div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="content-card doctor-roster-empty">
+      <span class="doctor-roster-empty-icon">✚</span><b>No doctors have been added yet</b>
+      <p>Once the demonstration roster is populated, doctors appear here and become selectable in appointment booking.</p>
+      <a href="#doctor-create" class="text-link">Add the first doctor ↑</a>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
