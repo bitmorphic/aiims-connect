@@ -227,13 +227,23 @@ def _build_search(resource_type):
 
     clinical_status = request.args.get("clinical-status", "").strip()
     if clinical_status:
-        clauses.append("JSON_SEARCH(payload, 'one', %s, NULL, '$.clinicalStatus.coding[*].code') IS NOT NULL")
-        params.append(clinical_status.split("|", 1)[-1])
+        token = clinical_status.split("|", 1)
+        if len(token) == 2 and token[0]:
+            clauses.append("JSON_CONTAINS(payload, JSON_OBJECT('system', %s, 'code', %s), '$.clinicalStatus.coding') = 1")
+            params.extend([token[0], token[1]])
+        else:
+            clauses.append("JSON_SEARCH(payload, 'one', %s, NULL, '$.clinicalStatus.coding[*].code') IS NOT NULL")
+            params.append(token[-1])
 
     verification_status = request.args.get("verification-status", "").strip()
     if verification_status:
-        clauses.append("JSON_SEARCH(payload, 'one', %s, NULL, '$.verificationStatus.coding[*].code') IS NOT NULL")
-        params.append(verification_status.split("|", 1)[-1])
+        token = verification_status.split("|", 1)
+        if len(token) == 2 and token[0]:
+            clauses.append("JSON_CONTAINS(payload, JSON_OBJECT('system', %s, 'code', %s), '$.verificationStatus.coding') = 1")
+            params.extend([token[0], token[1]])
+        else:
+            clauses.append("JSON_SEARCH(payload, 'one', %s, NULL, '$.verificationStatus.coding[*].code') IS NOT NULL")
+            params.append(token[-1])
 
     try:
         count = int(request.args.get("_count", "20"))
