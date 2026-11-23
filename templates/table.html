@@ -7,17 +7,50 @@
 </div>
 
 {% if kind == 'appointments' and can_create %}
-<section class="content-card form-card">
-  <div class="card-heading"><div><span class="page-eyebrow">OPD SCHEDULING</span><h2>Book an appointment</h2></div><span class="form-icon">▦</span></div>
-  <form method="post" class="data-form">
+<section class="content-card form-card appointment-booking-card">
+  <div class="form-card-heading">
+    <div><span class="page-eyebrow">OUTPATIENT DEPARTMENT · OPD</span><h2>Book an appointment</h2><p>Choose the branch doctor, a date and a slot. Booked times are checked live before submission.</p></div>
+    <span class="form-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3"/></svg></span>
+  </div>
+  {% if doctors %}
+  <form method="post" class="data-form appointment-form" id="appointment-booking-form" data-availability-url="{{ availability_url }}">
     {% if session.role != 'patient' %}
-    <label>Patient<select name="patient_uhid" required><option value="">Choose a patient</option>{% for p in patients %}<option value="{{ p.UHID }}">{{ p.Name }} · {{ p.UHID }}</option>{% endfor %}</select></label>
+    <label class="form-field">Patient
+      <select name="patient_uhid" required><option value="">Choose a patient</option>{% for p in patients %}<option value="{{ p.UHID }}">{{ p.Name }} · {{ p.UHID }}</option>{% endfor %}</select>
+    </label>
     {% endif %}
-    <label>Doctor<select name="doctor_id" required><option value="">Choose a doctor</option>{% for d in doctors %}<option value="{{ d.Staff_ID }}">{{ d.Name }} · {{ d.Specialization }} · {{ d.Branch_Name }}</option>{% endfor %}</select></label>
-    <label>Appointment date<input type="date" name="appt_date" min="{{ (now_date if now_date is defined else '') }}" required></label>
-    <label>OPD time slot<select name="time_slot" required><option value="">Choose a 30-minute slot</option>{% for t in ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','14:00','14:30','15:00','15:30','16:00','16:30'] %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select></label>
-    <div class="form-submit"><button class="button button-blue" type="submit">{{ 'Request appointment' if session.role == 'patient' else 'Book appointment' }} <span>→</span></button><small>{{ 'A hospital administrator must approve this request before it is confirmed.' if session.role == 'patient' else 'Doctor branch, slot uniqueness and token are enforced by MySQL.' }}</small></div>
+    <label class="form-field">Doctor
+      <select name="doctor_id" id="appt-doctor" required>
+        <option value="">Select a doctor</option>
+        {% for d in doctors %}<option value="{{ d.Staff_ID }}">{{ d.Name }} · {{ d.Specialization }} · {{ d.Dept_Name }} · {{ d.Branch_Name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="form-field">Appointment date
+      <input type="date" id="appt-date" name="appt_date" min="{{ now_date }}" required>
+    </label>
+    <label class="form-field">Available OPD slot
+      <select name="time_slot" id="appt-time" required disabled>
+        <option value="">Choose doctor and date first</option>
+        {% for t in ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','14:00','14:30','15:00','15:30','16:00','16:30'] %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+      </select>
+      <small class="field-hint" id="slot-feedback" aria-live="polite">Select a doctor and date to check available slots.</small>
+    </label>
+    <div class="appointment-form-footer">
+      <div class="appointment-policy"><span class="policy-dot"></span><span>{{ 'Your request stays Pending Approval until an administrator confirms it.' if session.role == 'patient' else 'Availability is rechecked by MySQL when the booking is saved.' }}</span></div>
+      <button class="button button-blue appointment-submit" type="submit" id="appointment-submit" disabled>{{ 'Request appointment' if session.role == 'patient' else 'Confirm appointment' }} <span>→</span></button>
+    </div>
   </form>
+  {% else %}
+  <div class="doctor-roster-empty" role="status">
+    <span class="doctor-roster-empty-icon">!</span>
+    <div>
+      <b>No doctors are available for booking yet</b>
+      <p>The hospital has departments, but the doctor roster is empty. Appointment booking stays disabled instead of showing a broken selector.</p>
+    </div>
+    {% if can_manage_doctors %}<a class="button button-blue" href="{{ url_for('main.doctors') }}">Add doctors to roster <span>→</span></a>
+    {% else %}<span class="roster-patient-note">Please check again after the hospital roster is configured.</span>{% endif %}
+  </div>
+  {% endif %}
 </section>
 {% endif %}
 
