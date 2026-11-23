@@ -41,7 +41,7 @@ After taking a restorable backup and reviewing the exact candidates, explicitly 
 .\.venv\Scripts\python.exe scripts\clean_demo_data.py --apply --backup-confirmed --confirm "REMOVE ONLY LEGACY AIIMS CONNECT DEMO DATA"
 ```
 
-The cleanup preserves branch, department and ward configuration, non-demo accounts, audit events and FHIR resources. It does not infer or delete unmarked records. The retired `scripts/seed_demo.py` now exits without creating data.
+The cleanup preserves branch, department and ward configuration, non-demo accounts, audit events and FHIR resources. If no active non-demo administrator exists, it also retains all legacy Demo staff accounts and their doctor-linked activity to avoid locking the system. Provision and test a real administrator before removing those accounts. It does not infer or delete unmarked records. The retired `scripts/seed_demo.py` now exits without creating data.
 
 ## Custom schema exports
 
