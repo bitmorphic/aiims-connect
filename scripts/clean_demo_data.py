@@ -33,6 +33,13 @@ def _ids(rows, field):
     return [row[field] for row in rows if row.get(field) is not None]
 
 
+def _staff_cleanup_targets(demo_staff, active_non_demo_admins):
+    """Keep legacy staff if removing them would leave no non-demo admin."""
+    if not active_non_demo_admins:
+        return [], True
+    return demo_staff, False
+
+
 def build_cleanup_plan(cursor):
     """Return exact legacy-demo row identifiers and counts without writing."""
     patient_logins = _fetch(
@@ -66,8 +73,9 @@ def build_cleanup_plan(cursor):
     # accounts are the only administrators, retain all demo staff and any
     # appointments/referrals belonging to those doctors until a real admin
     # account has been provisioned.
-    staff_cleanup_blocked = not bool(active_non_demo_admins)
-    staff_to_remove = [] if staff_cleanup_blocked else demo_staff
+    staff_to_remove, staff_cleanup_blocked = _staff_cleanup_targets(
+        demo_staff, active_non_demo_admins
+    )
     staff_ids = sorted(set(_ids(staff_to_remove, "Staff_ID")))
     staff_login_ids = sorted(set(_ids(staff_to_remove, "Login_ID")))
     doctor_ids = sorted({
@@ -258,8 +266,12 @@ def main():
             print("\nPatient accounts selected:")
             for row in plan["patient_logins"]:
                 print(f"  {row['Username']} -> {row.get('Patient_UHID') or '(no UHID)'} | {row.get('Patient_Name') or '(name unavailable)'}")
-        if plan["demo_staff"]:
-            print("\nStaff accounts selected:")
+        if plan["staff_cleanup_blocked"] and plan["demo_staff"]:
+            print("\nSAFETY HOLD: no active non-demo administrator was found.")
+            print("Legacy Demo staff accounts and their doctor-linked non-demo activity will be preserved.")
+            print("Provision and test a real administrator account before removing the old staff accounts.")
+        elif plan["demo_staff"]:
+            print("\nDemo staff accounts selected:")
             for row in plan["demo_staff"]:
                 print(f"  {row['Username']} -> {row['Staff_Name']} | {row['Staff_Type']} #{row['Staff_ID']}")
         if plan["fhir_resource_count"] is None:
