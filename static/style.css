@@ -838,3 +838,5 @@ select:focus-visible, textarea:focus-visible {
   .public-auth-links { gap:7px; }
   .public-auth-links .button { padding:9px 10px; font-size:10px; }
 }
+
+.status-pending-approval { color:#8a6416; border-color:#f0dfb2; background:#fff8e7; }
