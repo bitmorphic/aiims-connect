@@ -99,6 +99,10 @@ class FHIRApiTests(unittest.TestCase):
         }
         with patch("app.fhir.fetch_all", side_effect=[
             [{"resource_id": "synthea-123", "payload": json.dumps(patient)}],
+            [
+                {"resource_type": "Patient", "total": 1},
+                {"resource_type": "Observation", "total": 1},
+            ],
             [{"resource_type": "Observation", "total": 1}],
             [{
                 "resource_type": "Observation",
@@ -111,7 +115,9 @@ class FHIRApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Alex Example", response.data)
         self.assertIn(b"Blood pressure", response.data)
-        self.assertIn(b"View FHIR JSON", response.data)
+        self.assertIn(b"Inspect resource JSON", response.data)
+        self.assertIn(b"SYNTHETIC PATIENTS", response.data)
+        self.assertIn(b"Clinical timeline", response.data)
 
 
 if __name__ == "__main__":
