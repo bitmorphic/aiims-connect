@@ -728,23 +728,36 @@ def appointments():
                 )
                 return redirect(url_for("main.appointments"))
         try:
-            appt_id = call_procedure(
-                "BookAppointment",
-                (patient_uhid, doctor_id, appt_date, time_slot, None),
-                actor_login_id=actor_id(),
-                returns_output=True,
-            )
             if role == "patient":
-                _, changed = execute(
-                    """UPDATE appointment SET Status='Pending Approval'
-                       WHERE Appt_ID=%s AND Patient_UHID=%s AND Status='Scheduled'""",
-                    (appt_id, patient_uhid),
-                    actor_login_id=actor_id(),
-                )
-                if changed != 1:
-                    raise mysql.connector.Error(msg="Appointment request was created but could not be moved into the approval queue.")
+                # Keep the booking and transition into the approval queue in one
+                # transaction. A failed status update must not leave a live,
+                # unapproved appointment behind.
+                with db_transaction(actor_id()) as (_, cur):
+                    result = cur.callproc(
+                        "BookAppointment",
+                        (patient_uhid, doctor_id, appt_date, time_slot, None, None),
+                    )
+                    for result_cursor in cur.stored_results():
+                        result_cursor.fetchall()
+                        result_cursor.close()
+                    appt_id = result[-1]
+                    cur.execute(
+                        """UPDATE appointment SET Status='Pending Approval'
+                           WHERE Appt_ID=%s AND Patient_UHID=%s AND Status='Scheduled'""",
+                        (appt_id, patient_uhid),
+                    )
+                    if cur.rowcount != 1:
+                        raise mysql.connector.Error(
+                            msg="Appointment request could not be moved into the approval queue."
+                        )
                 flash("Appointment request submitted. It will appear as Pending Approval until hospital administration confirms it.", "success")
             else:
+                appt_id = call_procedure(
+                    "BookAppointment",
+                    (patient_uhid, doctor_id, appt_date, time_slot, None),
+                    actor_login_id=actor_id(),
+                    returns_output=True,
+                )
                 flash("Appointment booked successfully. Appointment ID: " + str(appt_id), "success")
         except mysql.connector.Error as exc:
             current_app.logger.exception("Appointment booking failed")
