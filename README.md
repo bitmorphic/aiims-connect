@@ -250,9 +250,10 @@ The bootstrap creates database objects only; it does not migrate local rows or s
 
 A typical end-to-end demonstration follows this sequence:
 
-1. Register a synthetic patient and note the generated UHID.
-2. Book an OPD appointment at a selected branch and verify the assigned token.
-3. Complete the appointment as the doctor and create a prescription.
+1. A patient creates their own account through the public Patient Portal. MySQL generates a chain-wide UHID and login together.
+2. The patient signs in, selects a doctor, branch, date and OPD time slot, and submits an appointment request. The request remains **Pending Approval** and is visible in the hospital administration workspace.
+3. A chain administrator or the relevant branch administrator reviews the request and approves it. The appointment becomes **Scheduled** only after approval.
+4. The doctor completes the approved appointment and creates a prescription.
 4. Admit the patient to an available ward and observe the available-bed count update.
 5. Discharge the patient, generate the bill, and update its payment status.
 6. Create a referral to another branch, accept it at the destination, and verify the appointment created for that branch.
