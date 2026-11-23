@@ -1,15 +1,17 @@
 from datetime import date, datetime, time, timedelta
 from functools import wraps
+from decimal import Decimal, InvalidOperation
 import logging
+import re
 
 import bcrypt
 import mysql.connector
 from flask import (
-    Blueprint, abort, current_app, flash, redirect, render_template,
+    Blueprint, abort, current_app, flash, jsonify, redirect, render_template,
     request, session, url_for,
 )
 
-from .db import call_procedure, execute, fetch_all, fetch_one
+from .db import call_procedure, execute, fetch_all, fetch_one, session as db_transaction
 
 bp = Blueprint("main", __name__)
 log = logging.getLogger(__name__)
@@ -467,6 +469,151 @@ def dashboard():
     )
 
 
+@bp.route("/doctors", methods=["GET", "POST"])
+@roles_required("chain_admin", "branch_admin")
+def doctors():
+    """Manage the explicitly synthetic doctor roster used by this academic demo."""
+    role = session["role"]
+    selected_branch = branch_id() if role == "branch_admin" else None
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        dob_raw = request.form.get("dob", "").strip()
+        phone = request.form.get("phone", "").strip()
+        dept_raw = request.form.get("dept_id", "").strip()
+        branch_raw = str(selected_branch or request.form.get("branch_id", "")).strip()
+        specialization = request.form.get("specialization", "").strip()
+        qualification = request.form.get("qualification", "").strip()
+        fee_raw = request.form.get("consultation_fee", "").strip()
+
+        try:
+            if not name or len(name) > 100:
+                raise ValueError("Enter a doctor name of up to 100 characters.")
+            dob = date.fromisoformat(dob_raw)
+            if dob >= date.today() or dob <= date(1930, 1, 1):
+                raise ValueError("Enter a valid date of birth.")
+            if not re.fullmatch(r"[0-9+ -]{8,15}", phone):
+                raise ValueError("Enter a valid phone number (8–15 characters).")
+            branch_value = int(branch_raw)
+            dept_value = int(dept_raw)
+            fee = Decimal(fee_raw)
+            if not fee.is_finite() or fee < 0 or fee > Decimal("99999999.99"):
+                raise ValueError("Consultation fee must be a non-negative amount.")
+            if not specialization or len(specialization) > 80:
+                raise ValueError("Enter a specialization of up to 80 characters.")
+            if not qualification or len(qualification) > 80:
+                raise ValueError("Enter a qualification of up to 80 characters.")
+
+            with db_transaction(actor_id()) as (_, cur):
+                cur.execute(
+                    "SELECT Branch_ID FROM branch WHERE Branch_ID=%s",
+                    (branch_value,),
+                )
+                if not cur.fetchone():
+                    raise ValueError("Select a valid hospital branch.")
+                if role == "branch_admin" and branch_value != selected_branch:
+                    abort(403)
+                cur.execute(
+                    "SELECT Dept_ID FROM department WHERE Dept_ID=%s AND Branch_ID=%s",
+                    (dept_value, branch_value),
+                )
+                if not cur.fetchone():
+                    raise ValueError("The selected department does not belong to that branch.")
+                cur.execute(
+                    """SELECT Staff_ID FROM staff
+                       WHERE Branch_ID=%s AND Staff_Type='Doctor' AND Name=%s LIMIT 1""",
+                    (branch_value, name),
+                )
+                if cur.fetchone():
+                    raise ValueError("A doctor with that name is already on this branch roster.")
+                cur.execute(
+                    """INSERT INTO staff (Branch_ID,Name,DOB,Phone,Staff_Type)
+                       VALUES (%s,%s,%s,%s,'Doctor')""",
+                    (branch_value, name, dob, phone),
+                )
+                staff_id = cur.lastrowid
+                cur.execute(
+                    """INSERT INTO doctor
+                       (Staff_ID,Staff_Type,Dept_ID,Specialization,Qualification,Consultation_Fee)
+                       VALUES (%s,'Doctor',%s,%s,%s,%s)""",
+                    (staff_id, dept_value, specialization, qualification, fee),
+                )
+            flash("Doctor added to the demonstration roster.", "success")
+            return redirect(url_for("main.doctors"))
+        except ValueError as exc:
+            flash(str(exc), "warning")
+        except mysql.connector.Error:
+            current_app.logger.exception("Doctor roster update failed")
+            flash("The doctor could not be added. The database transaction was rolled back.", "danger")
+
+    branch_sql = "SELECT Branch_ID,Branch_Name,City FROM branch"
+    branch_params = ()
+    if selected_branch is not None:
+        branch_sql += " WHERE Branch_ID=%s"
+        branch_params = (selected_branch,)
+    branch_sql += " ORDER BY Is_Main DESC,Branch_Name"
+    branches = _safe_query(branch_sql, branch_params)
+    dept_sql = """SELECT d.Dept_ID,d.Branch_ID,d.Dept_Name,b.Branch_Name
+                  FROM department d JOIN branch b ON b.Branch_ID=d.Branch_ID"""
+    dept_params = ()
+    if selected_branch is not None:
+        dept_sql += " WHERE d.Branch_ID=%s"
+        dept_params = (selected_branch,)
+    dept_sql += " ORDER BY b.Branch_Name,d.Dept_Name"
+    departments = _safe_query(dept_sql, dept_params)
+    roster_sql = """SELECT s.Staff_ID,s.Name,s.DOB,s.Phone,s.Branch_ID,b.Branch_Name,
+                           d.Dept_ID,dep.Dept_Name,d.Specialization,d.Qualification,
+                           d.Consultation_Fee
+                    FROM doctor d JOIN staff s ON s.Staff_ID=d.Staff_ID
+                    JOIN branch b ON b.Branch_ID=s.Branch_ID
+                    JOIN department dep ON dep.Dept_ID=d.Dept_ID"""
+    roster_params = ()
+    if selected_branch is not None:
+        roster_sql += " WHERE s.Branch_ID=%s"
+        roster_params = (selected_branch,)
+    roster_sql += " ORDER BY b.Branch_Name,dep.Dept_Name,s.Name"
+    roster = _safe_query(roster_sql, roster_params)
+    return render_template(
+        "doctors.html", branches=branches, departments=departments,
+        roster=roster, branch_locked=(selected_branch is not None),
+        title="Doctor roster",
+    )
+
+
+@bp.get("/appointments/availability")
+@login_required
+def appointment_availability():
+    """Return occupied OPD slots for a doctor/date pair to prevent avoidable clashes."""
+    role = session.get("role")
+    if role not in ("chain_admin", "branch_admin", "receptionist", "patient"):
+        abort(403)
+    try:
+        doctor_id = int(request.args.get("doctor_id", ""))
+        appt_date = date.fromisoformat(request.args.get("date", ""))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Choose a valid doctor and date.", "booked_slots": []}), 400
+    if appt_date < date.today():
+        return jsonify({"error": "Choose today or a future date.", "booked_slots": []}), 400
+    doctor = _safe_one(
+        """SELECT s.Staff_ID,s.Branch_ID
+           FROM doctor d JOIN staff s ON s.Staff_ID=d.Staff_ID
+           WHERE d.Staff_ID=%s""",
+        (doctor_id,),
+    )
+    if not doctor:
+        return jsonify({"error": "This doctor is not on the active roster.", "booked_slots": []}), 404
+    if role in ("branch_admin", "receptionist") and doctor["Branch_ID"] != branch_id():
+        abort(403)
+    booked = _safe_query(
+        """SELECT TIME_FORMAT(Time_Slot,'%%H:%%i') AS Time_Slot
+           FROM appointment
+           WHERE Doctor_ID=%s AND Appt_Date=%s AND Status<>'Cancelled'
+           ORDER BY Time_Slot""",
+        (doctor_id, appt_date),
+    )
+    return jsonify({"booked_slots": [row["Time_Slot"] for row in booked]})
+
+
 @bp.route("/patients")
 @login_required
 def patients():
@@ -506,12 +653,31 @@ def appointments():
         if not can_create:
             abort(403)
         patient_uhid = session["patient_uhid"] if role == "patient" else request.form.get("patient_uhid")
-        doctor_id = request.form.get("doctor_id")
-        appt_date = request.form.get("appt_date")
-        time_slot = request.form.get("time_slot")
-        if not patient_uhid or not doctor_id or not appt_date or not _time_slot_is_valid(time_slot):
-            flash("Choose a patient, doctor, future date and a valid 30-minute OPD slot.", "warning")
+        doctor_id_raw = request.form.get("doctor_id", "").strip()
+        appt_date_raw = request.form.get("appt_date", "").strip()
+        time_slot = request.form.get("time_slot", "").strip()
+        try:
+            doctor_id = int(doctor_id_raw)
+            appt_date = date.fromisoformat(appt_date_raw)
+        except (TypeError, ValueError):
+            flash("Choose a patient, an available doctor and a valid appointment date.", "warning")
             return redirect(url_for("main.appointments"))
+        if not patient_uhid or appt_date < date.today() or not _time_slot_is_valid(time_slot):
+            flash("Choose a patient, doctor, today or a future date, and a valid 30-minute OPD slot.", "warning")
+            return redirect(url_for("main.appointments"))
+
+        doctor_record = _safe_one(
+            """SELECT s.Branch_ID
+               FROM doctor d JOIN staff s ON s.Staff_ID=d.Staff_ID
+               WHERE d.Staff_ID=%s""",
+            (doctor_id,),
+        )
+        if not doctor_record:
+            flash("That doctor is no longer on the roster. Refresh the page and choose an available doctor.", "warning")
+            return redirect(url_for("main.appointments"))
+        if role in ("branch_admin", "receptionist") and doctor_record["Branch_ID"] != branch_id():
+            abort(403)
+
         if role == "patient":
             approval_constraint = _safe_one(
                 """SELECT CHECK_CLAUSE
@@ -526,17 +692,10 @@ def appointments():
                     "warning",
                 )
                 return redirect(url_for("main.appointments"))
-        if role in ("branch_admin", "receptionist"):
-            doctor_branch = _safe_one(
-                "SELECT Branch_ID FROM staff WHERE Staff_ID=%s AND Staff_Type='Doctor'",
-                (doctor_id,),
-            )
-            if not doctor_branch or doctor_branch["Branch_ID"] != branch_id():
-                abort(403)
         try:
             appt_id = call_procedure(
                 "BookAppointment",
-                (patient_uhid, int(doctor_id), appt_date, time_slot, None),
+                (patient_uhid, doctor_id, appt_date, time_slot, None),
                 actor_login_id=actor_id(),
                 returns_output=True,
             )
@@ -563,21 +722,28 @@ def appointments():
     patients_list = []
     if role in ("chain_admin", "branch_admin", "receptionist"):
         patients_list = _safe_query("SELECT UHID,Name FROM patient ORDER BY Name LIMIT 250")
-    doctor_sql = """SELECT d.Staff_ID,s.Name,d.Specialization,s.Branch_ID,b.Branch_Name
+    doctor_sql = """SELECT d.Staff_ID,s.Name,d.Specialization,s.Branch_ID,b.Branch_Name,
+                           dp.Dept_Name
                     FROM doctor d JOIN staff s ON s.Staff_ID=d.Staff_ID
-                    JOIN branch b ON b.Branch_ID=s.Branch_ID"""
+                    JOIN branch b ON b.Branch_ID=s.Branch_ID
+                    JOIN department dp ON dp.Dept_ID=d.Dept_ID"""
     doctor_params = ()
     if role in ("branch_admin", "receptionist"):
         doctor_sql += " WHERE s.Branch_ID=%s"
         doctor_params = (branch_id(),)
-    doctor_sql += " ORDER BY b.Branch_Name,s.Name"
+    doctor_sql += " ORDER BY b.Branch_Name,dp.Dept_Name,s.Name"
     doctors = _safe_query(doctor_sql, doctor_params)
     fhir_encounters = _fhir_encounter_preview() if role != "patient" else []
+    doctor_count = len(doctors)
+    can_manage_doctors = role in ("chain_admin", "branch_admin")
     return render_template(
         "table.html", title="Appointments", eyebrow="OUTPATIENT DEPARTMENT",
-        subtitle=("Your requests stay Pending Approval until a hospital administrator confirms them." if role == "patient" else "Review patient appointment requests and manage confirmed OPD visits."),
+        subtitle=("Your requests stay Pending Approval until a hospital administrator confirms them." if role == "patient" else "Book and manage OPD visits. Live slot checks help prevent avoidable clashes."),
         rows=rows, kind="appointments", q=request.args.get("q", ""),
         can_create=can_create, patients=patients_list, doctors=doctors,
+        doctor_count=doctor_count, can_manage_doctors=can_manage_doctors,
+        availability_url=url_for("main.appointment_availability"),
+        now_date=date.today().isoformat(),
         fhir_encounters=fhir_encounters, show_fhir_encounters=(role != "patient"),
     )
 
