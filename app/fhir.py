@@ -405,63 +405,63 @@ def explorer():
     selected_id = request.args.get("patient", "").strip()[:64]
     try:
         if query:
-        patients = fetch_all(
-            """SELECT resource_id,payload
-               FROM fhir_resource
-               WHERE resource_type='Patient'
-                 AND (resource_id=%s OR
-                   JSON_SEARCH(payload,'one',%s,NULL,
-                     '$.name[*].family','$.name[*].given[*]','$.name[*].text') IS NOT NULL)
-               ORDER BY resource_id LIMIT 50""",
-            (query, "%" + query + "%"),
-        )
-    else:
-        patients = fetch_all(
-            """SELECT resource_id,payload FROM fhir_resource
-               WHERE resource_type='Patient' ORDER BY resource_id LIMIT 30"""
-        )
-
-    patient_options = []
-    for row in patients:
-        resource = _json_resource(row["payload"])
-        patient_options.append({"id": row["resource_id"], **_patient_display(resource)})
-
-    selected = None
-    counts = []
-    records = []
-    if selected_id:
-        selected_row = fetch_one(
-            "SELECT payload FROM fhir_resource WHERE resource_type='Patient' AND resource_id=%s",
-            (selected_id,),
-        )
-        if selected_row:
-            patient_resource = _json_resource(selected_row["payload"])
-            selected = {"id": selected_id, **_patient_display(patient_resource)}
-            counts = fetch_all(
-                """SELECT resource_type,COUNT(*) AS total
+            patients = fetch_all(
+                """SELECT resource_id,payload
                    FROM fhir_resource
-                   WHERE patient_fhir_id=%s AND resource_type<>'Patient'
-                   GROUP BY resource_type ORDER BY total DESC,resource_type""",
+                   WHERE resource_type='Patient'
+                     AND (resource_id=%s OR
+                       JSON_SEARCH(payload,'one',%s,NULL,
+                         '$.name[*].family','$.name[*].given[*]','$.name[*].text') IS NOT NULL)
+                   ORDER BY resource_id LIMIT 50""",
+                (query, "%" + query + "%"),
+            )
+        else:
+            patients = fetch_all(
+                """SELECT resource_id,payload FROM fhir_resource
+                   WHERE resource_type='Patient' ORDER BY resource_id LIMIT 30"""
+            )
+
+        patient_options = []
+        for row in patients:
+            resource = _json_resource(row["payload"])
+            patient_options.append({"id": row["resource_id"], **_patient_display(resource)})
+
+        selected = None
+        counts = []
+        records = []
+        if selected_id:
+            selected_row = fetch_one(
+                "SELECT payload FROM fhir_resource WHERE resource_type='Patient' AND resource_id=%s",
                 (selected_id,),
             )
-            rows = fetch_all(
-                """SELECT resource_type,resource_id,last_updated,payload
-                   FROM fhir_resource
-                   WHERE patient_fhir_id=%s AND resource_type<>'Patient'
-                   ORDER BY last_updated DESC,resource_type,resource_id LIMIT 50""",
-                (selected_id,),
-            )
-            for row in rows:
-                resource = _json_resource(row["payload"])
-                label, status, event_date = _resource_display(resource)
-                records.append({
-                    "resource_type": row["resource_type"],
-                    "resource_id": row["resource_id"],
-                    "label": label,
-                    "status": status,
-                    "event_date": event_date,
-                    "json": json.dumps(resource, ensure_ascii=False, indent=2),
-                })
+            if selected_row:
+                patient_resource = _json_resource(selected_row["payload"])
+                selected = {"id": selected_id, **_patient_display(patient_resource)}
+                counts = fetch_all(
+                    """SELECT resource_type,COUNT(*) AS total
+                       FROM fhir_resource
+                       WHERE patient_fhir_id=%s AND resource_type<>'Patient'
+                       GROUP BY resource_type ORDER BY total DESC,resource_type""",
+                    (selected_id,),
+                )
+                rows = fetch_all(
+                    """SELECT resource_type,resource_id,last_updated,payload
+                       FROM fhir_resource
+                       WHERE patient_fhir_id=%s AND resource_type<>'Patient'
+                       ORDER BY last_updated DESC,resource_type,resource_id LIMIT 50""",
+                    (selected_id,),
+                )
+                for row in rows:
+                    resource = _json_resource(row["payload"])
+                    label, status, event_date = _resource_display(resource)
+                    records.append({
+                        "resource_type": row["resource_type"],
+                        "resource_id": row["resource_id"],
+                        "label": label,
+                        "status": status,
+                        "event_date": event_date,
+                        "json": json.dumps(resource, ensure_ascii=False, indent=2),
+                    })
         elif patient_options:
             # Show the first search result's demographics without implicitly loading
             # the entire clinical history; selection is an explicit staff action.
