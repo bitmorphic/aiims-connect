@@ -133,10 +133,11 @@ aiims-connect/
 │   ├── routes.py
 │   └── fhir.py
 ├── scripts/
+│   ├── clean_demo_data.py
 │   ├── import_fhir.py
 │   ├── init_db.py
 │   ├── prepare_railway_schema.py
-│   └── seed_demo.py
+│   └── seed_demo.py (disabled)
 ├── sql/
 │   ├── README.md
 │   ├── schema.sql
