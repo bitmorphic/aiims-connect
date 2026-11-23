@@ -575,7 +575,7 @@ def doctors():
                 )
             flash("Doctor added to the demonstration roster.", "success")
             return redirect(url_for("main.doctors"))
-        except ValueError as exc:
+        except (ValueError, InvalidOperation) as exc:
             flash(str(exc), "warning")
         except mysql.connector.Error:
             current_app.logger.exception("Doctor roster update failed")
