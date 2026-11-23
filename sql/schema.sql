@@ -243,7 +243,7 @@ CREATE TABLE `appointment` (
   CONSTRAINT `fk_appt_patient` FOREIGN KEY (`Patient_UHID`) REFERENCES `patient` (`UHID`),
   CONSTRAINT `fk_appt_referral` FOREIGN KEY (`Referral_ID`) REFERENCES `referral` (`Referral_ID`),
   CONSTRAINT `chk_appt_slot_grid` CHECK ((((`Time_Slot` between '09:00:00' and '12:30:00') or (`Time_Slot` between '14:00:00' and '16:30:00')) and ((minute(`Time_Slot`) % 30) = 0) and (second(`Time_Slot`) = 0))),
-  CONSTRAINT `chk_appt_status` CHECK ((`Status` in (_utf8mb4'Scheduled',_utf8mb4'Completed',_utf8mb4'Cancelled'))),
+  CONSTRAINT `chk_appt_status` CHECK ((`Status` in (_utf8mb4'Pending Approval',_utf8mb4'Scheduled',_utf8mb4'Completed',_utf8mb4'Cancelled'))),
   CONSTRAINT `chk_appt_token` CHECK ((`Token_No` between 1 and 200))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='OPD appointments;
 
