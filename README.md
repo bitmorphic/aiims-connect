@@ -243,7 +243,7 @@ The FHIR tables are intentionally separate from the operational `patient`, `appo
 
 ### Import the dataset
 
-The ZIP is not stored in GitHub and is not loaded automatically during app startup. After applying the FHIR SQL migration and configuring the local `.env` to point to the intended MySQL database, run:
+The ZIP is not stored in GitHub and is not loaded automatically during app startup. In this supplied archive, the compressed file is about 29 MiB while the serialized resource payload totals about 255 MiB before MySQL row/index overhead. Check available Railway database storage before importing the complete sample. After applying the FHIR SQL migration and configuring the local `.env` to point to the intended MySQL database, run:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\import_fhir.py "C:\path\to\synthea_sample_data_fhir_latest.zip" --dry-run
