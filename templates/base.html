@@ -44,6 +44,7 @@
     <a class="side-link {% if request.endpoint == 'main.referrals' %}active{% endif %}" href="{{ url_for('main.referrals') }}"><span>⇄</span> Referrals</a>
     <a class="side-link {% if request.endpoint == 'main.prescriptions' %}active{% endif %}" href="{{ url_for('main.prescriptions') }}"><span>✚</span> Prescriptions</a>
     <a class="side-link {% if request.endpoint == 'main.billing' %}active{% endif %}" href="{{ url_for('main.billing') }}"><span>▧</span> Billing</a>
+    <a class="side-link {% if request.endpoint == 'fhir.explorer' %}active{% endif %}" href="{{ url_for('fhir.explorer') }}"><span>⌘</span> FHIR Explorer</a>
     {% endif %}
     {% if session.get('role') in ('chain_admin', 'branch_admin') %}
     <div class="sidebar-label">INSIGHTS</div>
