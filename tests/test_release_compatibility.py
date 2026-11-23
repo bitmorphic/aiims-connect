@@ -41,7 +41,7 @@ class ReleaseCompatibilityTests(unittest.TestCase):
             response = self.client.get("/fhir/explorer")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"FHIR storage is not available", response.data)
-        self.assertIn(b"Existing hospital workflows remain available", response.data)
+        self.assertIn(b"operational patient and appointment workflows are unaffected", response.data)
 
     def test_patient_booking_waits_for_approval_constraint_migration(self):
         self.sign_in("patient")
