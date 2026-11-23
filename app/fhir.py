@@ -273,7 +273,9 @@ def read_resource(resource_type, resource_id):
         if not row:
             return _outcome(404, "not-found", "No resource with that type and id was found.")
         return _fhir_response(_json_resource(row["payload"]))
-    except Exception:
+    except Exception as exc:
+        if getattr(exc, "errno", None) == 1146:
+            return _outcome(503, "not-supported", "FHIR storage is not installed yet. Apply the FHIR interoperability migration before using clinical resources.")
         current_app.logger.exception("FHIR resource read failed")
         return _outcome(500, "exception", "The FHIR resource could not be read.")
 
@@ -321,7 +323,9 @@ def search_resources(resource_type):
         return _fhir_response(bundle)
     except ValueError as exc:
         return _outcome(400, "value", str(exc))
-    except Exception:
+    except Exception as exc:
+        if getattr(exc, "errno", None) == 1146:
+            return _outcome(503, "not-supported", "FHIR storage is not installed yet. Apply the FHIR interoperability migration before searching clinical resources.")
         current_app.logger.exception("FHIR resource search failed")
         return _outcome(500, "exception", "The FHIR search could not be completed.")
 
@@ -399,7 +403,8 @@ def explorer():
 
     query = request.args.get("q", "").strip()[:120]
     selected_id = request.args.get("patient", "").strip()[:64]
-    if query:
+    try:
+        if query:
         patients = fetch_all(
             """SELECT resource_id,payload
                FROM fhir_resource
@@ -457,13 +462,21 @@ def explorer():
                     "event_date": event_date,
                     "json": json.dumps(resource, ensure_ascii=False, indent=2),
                 })
-    elif patient_options:
-        # Show the first search result's demographics without implicitly loading
-        # the entire clinical history; selection is an explicit staff action.
-        selected_id = patient_options[0]["id"]
+        elif patient_options:
+            # Show the first search result's demographics without implicitly loading
+            # the entire clinical history; selection is an explicit staff action.
+            selected_id = patient_options[0]["id"]
+    except Exception as exc:
+        if getattr(exc, "errno", None) != 1146:
+            current_app.logger.exception("FHIR Explorer failed")
+            abort(500)
+        return render_template(
+            "fhir_explorer.html", query=query, patients=[], selected=None,
+            selected_id="", counts=[], records=[], storage_ready=False,
+        )
 
     return render_template(
         "fhir_explorer.html", query=query, patients=patient_options,
         selected=selected, selected_id=selected_id,
-        counts=counts, records=records,
+        counts=counts, records=records, storage_ready=True,
     )
