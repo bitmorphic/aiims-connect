@@ -611,7 +611,7 @@ def doctors():
     return render_template(
         "doctors.html", branches=branches, departments=departments,
         roster=roster, branch_locked=(selected_branch is not None),
-        title="Doctor roster",
+        today=date.today().isoformat(), title="Doctor roster",
     )
 
 
