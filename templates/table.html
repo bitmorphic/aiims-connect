@@ -59,6 +59,34 @@
 </section>
 {% endif %}
 
+{% if kind == 'patients' and show_fhir_patients %}
+<section class="content-card">
+  <div class="records-toolbar">
+    <div><span class="page-eyebrow">FHIR R4 · SYNTHETIC DATA</span><h2>FHIR patient samples</h2></div>
+    <span class="table-count"><b>{{ fhir_patients|length }}</b><small>shown</small></span>
+  </div>
+  <p class="page-note">Read-only Synthea examples from the FHIR store. These identities have FHIR IDs, not AIIMS UHIDs, and are not available for hospital booking or admission.</p>
+  {% if fhir_patients %}
+  <div class="fhir-patient-items">
+    {% for patient in fhir_patients %}
+    <a class="fhir-patient-item" href="{{ url_for('fhir.explorer', patient=patient.id) }}">
+      <span class="fhir-patient-avatar">{{ patient.name[:1]|upper }}</span>
+      <span class="fhir-patient-copy">
+        <b>{{ patient.name }}</b>
+        <small>{{ patient.gender|title }} · {{ patient.birth_date }}</small>
+        <small class="fhir-id">FHIR ID: {{ patient.id }}</small>
+        <small>{{ patient.encounter_count }} linked clinical encounters · synthetic</small>
+      </span>
+      <span class="fhir-patient-arrow">View history →</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state"><b>No FHIR sample patients imported</b><small>When a Synthea sample is imported, its synthetic identities will appear here without being added to the AIIMS patient registry.</small></div>
+  {% endif %}
+</section>
+{% endif %}
+
 <section class="content-card records-card">
   <div class="records-toolbar"><div><span class="page-eyebrow">DATABASE RECORDS</span><h2>{{ 'Your records' if session.role == 'patient' else 'Record directory' }}</h2></div><div class="table-search"><span>⌕</span><input id="recordSearch" type="search" placeholder="Search visible records..."></div></div>
   {% if rows %}
@@ -135,5 +163,38 @@
   {% else %}
   <div class="empty-state"><span>◎</span><b>No records found</b><small>Records will appear here as workflows are completed.</small></div>
   {% endif %}
+
+{% if kind == 'appointments' and show_fhir_encounters %}
+<section class="content-card">
+  <div class="records-toolbar">
+    <div><span class="page-eyebrow">FHIR R4 · SYNTHETIC DATA</span><h2>Historical clinical encounters</h2></div>
+    <span class="table-count"><b>{{ fhir_encounters|length }}</b><small>shown</small></span>
+  </div>
+  <p class="page-note">These are FHIR <strong>Encounter</strong> resources describing past or recorded care visits. They are not bookable Appointment slots and do not change the operational appointment schedule.</p>
+  {% if fhir_encounters %}
+  <div class="fhir-timeline">
+    {% for encounter in fhir_encounters %}
+    <article class="fhir-record">
+      <div class="fhir-record-head">
+        <div>
+          <span class="fhir-resource-type">FHIR ENCOUNTER · {{ encounter.resource_id }}</span>
+          <h3>{{ encounter.label }}</h3>
+        </div>
+        <span class="status-pill">{{ encounter.status }}</span>
+      </div>
+      <div class="fhir-record-meta">
+        <span>{{ encounter.patient_name }} · {{ encounter.event_date or 'Date not recorded' }}</span>
+        {% if encounter.patient_fhir_id %}
+        <a href="{{ url_for('fhir.explorer', patient=encounter.patient_fhir_id) }}">Open FHIR patient history →</a>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state"><b>No FHIR encounters imported</b><small>The Synthea sample includes historical Encounter records, which will appear here after import.</small></div>
+  {% endif %}
+</section>
+{% endif %}
 </section>
 {% endblock %}
