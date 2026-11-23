@@ -463,9 +463,44 @@ def dashboard():
         }
         for row in branches
     ]
+    staff_scope = role in ("chain_admin", "branch_admin", "receptionist", "doctor")
+    if staff_scope:
+        doctor_sql = """SELECT COUNT(*) AS total FROM doctor d
+                        JOIN staff s ON s.Staff_ID=d.Staff_ID"""
+        doctor_params = ()
+        if role != "chain_admin":
+            doctor_sql += " WHERE s.Branch_ID=%s"
+            doctor_params = (branch_id(),)
+        doctor_count = int((_safe_one(doctor_sql, doctor_params) or {}).get("total", 0))
+        fhir_rows = _fhir_optional_query(
+            """SELECT resource_type,COUNT(*) AS total
+               FROM fhir_resource GROUP BY resource_type ORDER BY resource_type"""
+        )
+        fhir_stats = {row["resource_type"]: int(row["total"]) for row in fhir_rows}
+        fhir_batch = _fhir_optional_query(
+            """SELECT status,resource_count,patient_count,finished_at
+               FROM fhir_import_batch ORDER BY batch_id DESC LIMIT 1"""
+        )
+        fhir_import = fhir_batch[0] if fhir_batch else None
+    else:
+        doctor_count = 0
+        fhir_stats = {}
+        fhir_import = None
+
+    fhir_summary = {
+        "patients": fhir_stats.get("Patient", 0),
+        "encounters": fhir_stats.get("Encounter", 0),
+        "observations": fhir_stats.get("Observation", 0),
+        "conditions": fhir_stats.get("Condition", 0),
+        "procedures": fhir_stats.get("Procedure", 0),
+        "resources": sum(fhir_stats.values()),
+    }
+    roster_warning = staff_scope and doctor_count == 0
     return render_template(
         "dashboard.html", stats=stats, branches=branches,
-        chart_branches=chart_branches, recent=recent
+        chart_branches=chart_branches, recent=recent,
+        doctor_count=doctor_count, roster_warning=roster_warning,
+        fhir_summary=fhir_summary, fhir_import=fhir_import,
     )
 
 
