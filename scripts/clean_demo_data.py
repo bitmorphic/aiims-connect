@@ -245,15 +245,18 @@ def main():
 
         connection.start_transaction()
         deleted = apply_cleanup(cursor, plan)
-        connection.commit()
-        print("\nCleanup committed:")
-        for table, count in deleted.items():
-            print(f"  {table:20} {count:>8,}")
         if plan["fhir_resource_count"] is not None:
             cursor.execute("SELECT COUNT(*) AS row_count FROM fhir_resource")
             after = int(cursor.fetchone()["row_count"])
             if after != plan["fhir_resource_count"]:
-                raise RuntimeError("FHIR resource count changed unexpectedly; investigate immediately.")
+                raise RuntimeError("FHIR resource count changed unexpectedly; rolling back cleanup.")
+        else:
+            after = None
+        connection.commit()
+        print("\nCleanup committed:")
+        for table, count in deleted.items():
+            print(f"  {table:20} {count:>8,}")
+        if after is not None:
             print(f"  FHIR resources preserved: {after:,}")
         print("\nDone. Operational demo patients and their linked demo activity were removed.")
         print("FHIR resources remain isolated and available through the staff-only FHIR API.")
