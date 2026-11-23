@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import json
 from urllib.parse import urlencode
 
-from flask import Blueprint, current_app, request, session
+from flask import Blueprint, abort, current_app, redirect, render_template, request, session, url_for
 
 from .db import fetch_all, fetch_one
 
@@ -314,3 +314,146 @@ def search_resources(resource_type):
     except Exception:
         current_app.logger.exception("FHIR resource search failed")
         return _outcome(500, "exception", "The FHIR search could not be completed.")
+
+
+def _patient_display(resource):
+    names = resource.get("name") or []
+    if names:
+        name = names[0].get("text")
+        if not name:
+            name = " ".join((names[0].get("given") or []) + ([names[0]["family"]] if names[0].get("family") else []))
+    else:
+        name = ""
+    address = resource.get("address") or []
+    address_text = ""
+    if address:
+        first = address[0]
+        address_text = ", ".join(
+            str(part) for part in (
+                " ".join(first.get("line") or []),
+                first.get("city"),
+                first.get("state"),
+                first.get("postalCode"),
+                first.get("country"),
+            ) if part
+        )
+    return {
+        "name": name or "Unnamed synthetic patient",
+        "gender": resource.get("gender") or "Not recorded",
+        "birth_date": resource.get("birthDate") or "Not recorded",
+        "address": address_text,
+    }
+
+
+def _resource_display(resource):
+    concept = (
+        resource.get("code")
+        or resource.get("type")
+        or resource.get("medicationCodeableConcept")
+        or resource.get("vaccineCode")
+        or {}
+    )
+    display = concept.get("text") if isinstance(concept, dict) else None
+    if not display and isinstance(concept, dict):
+        codings = concept.get("coding") or []
+        if codings:
+            display = codings[0].get("display") or codings[0].get("code")
+    status = resource.get("status")
+    if not status:
+        for key in ("clinicalStatus", "verificationStatus"):
+            value = resource.get(key) or {}
+            codings = value.get("coding") or []
+            if codings:
+                status = codings[0].get("display") or codings[0].get("code")
+                break
+    event_date = (
+        resource.get("effectiveDateTime")
+        or resource.get("issued")
+        or resource.get("onsetDateTime")
+        or resource.get("recordedDate")
+        or resource.get("performedDateTime")
+        or resource.get("authoredOn")
+        or resource.get("date")
+        or ""
+    )
+    return display or resource.get("resourceType", "FHIR resource"), status or "—", event_date
+
+
+@bp.get("/explorer")
+def explorer():
+    """Staff-only browser for the imported, deliberately separate Synthea dataset."""
+    if not session.get("login_id"):
+        return redirect(url_for("main.login", portal="staff", next=request.path))
+    if session.get("role") not in ("chain_admin", "branch_admin", "doctor", "receptionist"):
+        abort(403)
+
+    query = request.args.get("q", "").strip()[:120]
+    selected_id = request.args.get("patient", "").strip()[:64]
+    if query:
+        patients = fetch_all(
+            """SELECT resource_id,payload
+               FROM fhir_resource
+               WHERE resource_type='Patient'
+                 AND (resource_id=%s OR
+                   JSON_SEARCH(payload,'one',%s,NULL,
+                     '$.name[*].family','$.name[*].given[*]','$.name[*].text') IS NOT NULL)
+               ORDER BY resource_id LIMIT 50""",
+            (query, "%" + query + "%"),
+        )
+    else:
+        patients = fetch_all(
+            """SELECT resource_id,payload FROM fhir_resource
+               WHERE resource_type='Patient' ORDER BY resource_id LIMIT 30"""
+        )
+
+    patient_options = []
+    for row in patients:
+        resource = _json_resource(row["payload"])
+        patient_options.append({"id": row["resource_id"], **_patient_display(resource)})
+
+    selected = None
+    counts = []
+    records = []
+    if selected_id:
+        selected_row = fetch_one(
+            "SELECT payload FROM fhir_resource WHERE resource_type='Patient' AND resource_id=%s",
+            (selected_id,),
+        )
+        if selected_row:
+            patient_resource = _json_resource(selected_row["payload"])
+            selected = {"id": selected_id, **_patient_display(patient_resource)}
+            counts = fetch_all(
+                """SELECT resource_type,COUNT(*) AS total
+                   FROM fhir_resource
+                   WHERE patient_fhir_id=%s AND resource_type<>'Patient'
+                   GROUP BY resource_type ORDER BY total DESC,resource_type""",
+                (selected_id,),
+            )
+            rows = fetch_all(
+                """SELECT resource_type,resource_id,last_updated,payload
+                   FROM fhir_resource
+                   WHERE patient_fhir_id=%s AND resource_type<>'Patient'
+                   ORDER BY last_updated DESC,resource_type,resource_id LIMIT 50""",
+                (selected_id,),
+            )
+            for row in rows:
+                resource = _json_resource(row["payload"])
+                label, status, event_date = _resource_display(resource)
+                records.append({
+                    "resource_type": row["resource_type"],
+                    "resource_id": row["resource_id"],
+                    "label": label,
+                    "status": status,
+                    "event_date": event_date,
+                    "json": json.dumps(resource, ensure_ascii=False, indent=2),
+                })
+    elif patient_options:
+        # Show the first search result's demographics without implicitly loading
+        # the entire clinical history; selection is an explicit staff action.
+        selected_id = patient_options[0]["id"]
+
+    return render_template(
+        "fhir_explorer.html", query=query, patients=patient_options,
+        selected=selected, selected_id=selected_id,
+        counts=counts, records=records,
+    )
