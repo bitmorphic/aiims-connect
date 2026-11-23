@@ -458,7 +458,7 @@ def appointments():
     doctors = _safe_query(doctor_sql, doctor_params)
     return render_template(
         "table.html", title="Appointments", eyebrow="OUTPATIENT DEPARTMENT",
-        subtitle="Book and manage OPD visits with database-enforced slot and token rules.",
+        subtitle=("Your requests stay Pending Approval until a hospital administrator confirms them." if role == "patient" else "Review patient appointment requests and manage confirmed OPD visits."),
         rows=rows, kind="appointments", q=request.args.get("q", ""),
         can_create=can_create, patients=patients_list, doctors=doctors,
     )
