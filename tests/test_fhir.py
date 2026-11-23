@@ -71,5 +71,48 @@ class FHIRApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
 
 
+    def test_explorer_redirects_unauthenticated_users(self):
+        response = self.client.get("/fhir/explorer")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login?portal=staff", response.headers["Location"])
+
+    def test_patient_portal_cannot_open_fhir_explorer(self):
+        self.sign_in("patient")
+        response = self.client.get("/fhir/explorer")
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_can_browse_synthetic_patient_history(self):
+        self.sign_in()
+        patient = {
+            "resourceType": "Patient",
+            "id": "synthea-123",
+            "name": [{"given": ["Alex"], "family": "Example"}],
+            "gender": "female",
+            "birthDate": "1985-04-12",
+        }
+        observation = {
+            "resourceType": "Observation",
+            "id": "obs-1",
+            "status": "final",
+            "code": {"text": "Blood pressure"},
+            "effectiveDateTime": "2025-01-02",
+        }
+        with patch("app.fhir.fetch_all", side_effect=[
+            [{"resource_id": "synthea-123", "payload": json.dumps(patient)}],
+            [{"resource_type": "Observation", "total": 1}],
+            [{
+                "resource_type": "Observation",
+                "resource_id": "obs-1",
+                "last_updated": None,
+                "payload": json.dumps(observation),
+            }],
+        ]), patch("app.fhir.fetch_one", return_value={"payload": json.dumps(patient)}):
+            response = self.client.get("/fhir/explorer?patient=synthea-123")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Alex Example", response.data)
+        self.assertIn(b"Blood pressure", response.data)
+        self.assertIn(b"View FHIR JSON", response.data)
+
+
 if __name__ == "__main__":
     unittest.main()
