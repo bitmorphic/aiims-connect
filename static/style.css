@@ -885,3 +885,163 @@ select:focus-visible, textarea:focus-visible {
 .fhir-empty-icon { display: grid; place-items: center; width: 66px; height: 66px; border-radius: 20px; color: #2868d8; background: #eaf1ff; font: 800 18px "Manrope",sans-serif; letter-spacing: -1px; }
 @media (max-width: 950px) { .fhir-explorer-grid { grid-template-columns: 1fr; } .fhir-patient-list { position: static; } .fhir-patient-items { grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); } }
 @media (max-width: 560px) { .fhir-profile-meta { grid-template-columns: 1fr; } .fhir-profile-meta .fhir-address { grid-column: auto; } .fhir-record-head,.fhir-record-meta { align-items: flex-start; flex-direction: column; } }
+
+
+/* FHIR workspace refresh — retain the existing AIIMS Connect navy and blue palette */
+.fhir-page { width: min(1400px,100%); margin: 0 auto; padding-bottom: 42px; }
+.fhir-hero { display:flex; align-items:center; justify-content:space-between; gap:24px; margin: 2px 0 24px; padding: 26px 28px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(120deg,#ffffff 0%,#f4f7fc 100%); }
+.fhir-hero-copy { min-width:0; }
+.fhir-hero h1 { margin:7px 0 6px; color:var(--navy); font:800 clamp(28px,3vw,36px)/1.15 "Manrope",sans-serif; letter-spacing:-1.4px; }
+.fhir-hero-copy > p { max-width:680px; margin:0; color:#718198; font-size:13px; line-height:1.75; }
+.fhir-hero-note { display:flex; align-items:center; gap:8px; margin-top:15px; color:#64758a; font-size:10px; font-weight:600; }
+.fhir-note-dot { display:inline-block; width:7px; height:7px; flex:0 0 7px; border-radius:50%; background:var(--blue); }
+.fhir-version-card { display:flex; align-items:center; gap:12px; min-width:174px; padding:14px 16px; border:1px solid #dce5f1; border-radius:13px; background:white; }
+.fhir-version-mark { display:grid; place-items:center; width:42px; height:42px; border-radius:12px; color:var(--blue); background:var(--blue-pale); font:800 17px "Manrope",sans-serif; }
+.fhir-version-card span:last-child { display:grid; gap:3px; }
+.fhir-version-card b { color:var(--navy); font-size:11px; }
+.fhir-version-card small { color:#7d8ba0; font-size:10px; }
+.fhir-stats-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+.fhir-stat-card { display:flex; align-items:center; gap:13px; min-width:0; padding:16px; border:1px solid var(--line); border-radius:13px; background:#fff; box-shadow:0 4px 14px rgba(16,38,66,.025); }
+.fhir-stat-symbol { display:grid; place-items:center; width:39px; height:39px; flex:0 0 39px; border-radius:12px; color:var(--blue); background:var(--blue-pale); font:800 14px "Manrope",sans-serif; }
+.fhir-stat-card div { display:grid; min-width:0; }
+.fhir-stat-card small { color:#8190a5; font-size:8px; font-weight:800; letter-spacing:.8px; }
+.fhir-stat-card b { margin:2px 0 1px; color:var(--navy); font:800 23px "Manrope",sans-serif; letter-spacing:-.8px; }
+.fhir-stat-card div span { color:#8794a6; font-size:9px; }
+.fhir-stat-total { background:#f7f9fd; }
+.fhir-search-card { margin-bottom:16px; padding:21px 23px; }
+.fhir-section-heading,.fhir-panel-heading,.fhir-workspace-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; }
+.fhir-section-heading h2,.fhir-panel-heading h2,.fhir-workspace-heading h2 { margin:5px 0 0; color:var(--navy); font:800 18px "Manrope",sans-serif; letter-spacing:-.45px; }
+.fhir-section-heading p,.fhir-workspace-heading p { margin:5px 0 0; color:#7a899d; font-size:11px; }
+.fhir-search-mark { display:grid; place-items:center; width:40px; height:40px; border-radius:12px; color:var(--blue); background:var(--blue-pale); font-size:20px; }
+.fhir-search-form { display:flex; align-items:end; gap:12px; margin-top:17px; }
+.fhir-search-field { display:grid; flex:1; min-width:0; gap:7px; }
+.fhir-search-field span { color:#3b536f; font-size:11px; font-weight:700; }
+.fhir-search-field input { width:100%; min-height:45px; padding:0 14px; border:1px solid #d8e1ed; border-radius:9px; outline:none; color:var(--navy); background:#fff; font:12px "DM Sans",sans-serif; }
+.fhir-search-field input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(36,95,196,.1); }
+.fhir-search-form .button { min-height:45px; white-space:nowrap; }
+.fhir-clear-search { padding:0 4px 12px; color:var(--blue); font-size:10px; font-weight:700; text-decoration:none; white-space:nowrap; }
+.fhir-search-foot { display:flex; gap:16px; margin-top:10px; color:#8a97a9; font-size:9px; }
+.fhir-explorer-grid { display:grid; grid-template-columns:minmax(280px,.78fr) minmax(0,1.72fr); gap:16px; align-items:start; margin-bottom:0; }
+.fhir-directory-card { min-width:0; padding:19px; }
+.fhir-result-count { display:inline-flex; align-items:baseline; gap:4px; padding:7px 10px; border:1px solid #e2e9f2; border-radius:9px; color:var(--navy); background:#fbfcfe; font:800 14px "Manrope",sans-serif; white-space:nowrap; }
+.fhir-result-count small { color:#8795a8; font:500 9px "DM Sans",sans-serif; }
+.fhir-patient-items { display:grid; gap:7px; margin-top:12px; }
+.fhir-patient-item { display:flex; align-items:center; gap:11px; min-width:0; padding:12px 11px; border:1px solid #edf1f6; border-radius:11px; background:#fff; text-decoration:none; transition:border-color .16s,background .16s,transform .16s; }
+.fhir-patient-item:hover,.fhir-patient-item.active { border-color:#cbdaf0; background:#f5f8fd; transform:translateY(-1px); }
+.fhir-patient-avatar { width:39px; height:39px; flex:0 0 39px; border-radius:12px; }
+.fhir-patient-copy { gap:4px; }
+.fhir-patient-copy b { color:var(--navy); font-size:11px; }
+.fhir-patient-copy small { color:#7e8ca0; font-size:9px; }
+.fhir-meta-separator { padding:0 3px; color:#afbac8; }
+.fhir-patient-arrow { display:grid; place-items:center; width:25px; height:25px; flex:0 0 25px; border-radius:8px; color:var(--blue); background:#edf3fc; font-size:13px; }
+.fhir-directory-foot { display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:13px; border-top:1px solid #eef1f5; color:#8694a7; font-size:9px; }
+.fhir-detail-column { gap:15px; }
+.fhir-profile-card,.fhir-summary-card,.fhir-timeline-card { min-width:0; padding:20px; }
+.fhir-profile-top { display:flex; align-items:center; gap:13px; min-width:0; }
+.fhir-profile-avatar { display:grid; place-items:center; width:48px; height:48px; flex:0 0 48px; border-radius:14px; color:var(--blue); background:var(--blue-pale); font:800 18px "Manrope",sans-serif; }
+.fhir-profile-title { min-width:0; flex:1; }
+.fhir-profile-title h2 { margin:3px 0 2px; font-size:21px; overflow-wrap:anywhere; }
+.fhir-profile-title .fhir-id { margin:0; }
+.fhir-synthetic-tag,.fhir-readonly-label { display:inline-flex; align-items:center; padding:6px 9px; border:1px solid #dce7f5; border-radius:8px; color:#3867a9; background:#f5f8fd; font-size:9px; font-weight:700; white-space:nowrap; }
+.fhir-profile-meta { gap:9px; margin-top:16px; }
+.fhir-profile-meta div { padding:11px 12px; border:1px solid #edf1f6; background:#f9fbfe; }
+.fhir-profile-meta small { font-size:8px; }
+.fhir-profile-meta b { font-size:11px; }
+.fhir-panel-heading { margin-bottom:14px; }
+.fhir-count-grid { grid-template-columns:repeat(auto-fit,minmax(112px,1fr)); gap:8px; }
+.fhir-count-card { padding:11px 12px; border-color:#e7edf5; background:#fbfcfe; }
+.fhir-count-card b { font-size:20px; }
+.fhir-count-card span { font-size:9px; }
+.fhir-timeline { position:relative; padding-left:17px; }
+.fhir-timeline:before { position:absolute; top:8px; bottom:13px; left:4px; width:1px; background:#dfe7f1; content:""; }
+.fhir-record { position:relative; padding:0 0 16px; margin-bottom:15px; border-bottom:1px solid #edf1f6; }
+.fhir-record:last-child { margin-bottom:0; padding-bottom:0; border-bottom:0; }
+.fhir-timeline-node { position:absolute; top:5px; left:-17px; width:9px; height:9px; border:2px solid #fff; border-radius:50%; background:var(--blue); box-shadow:0 0 0 2px #dce8f8; }
+.fhir-record h3 { font-size:12px; }
+.fhir-record-head { align-items:center; }
+.fhir-status-tag { display:inline-flex; max-width:150px; padding:5px 8px; overflow:hidden; border:1px solid #e0e8f2; border-radius:7px; color:#526b89; background:#f7f9fc; font-size:9px; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+.fhir-record-meta { align-items:center; color:#8a97a9; font-size:9px; }
+.fhir-json-details summary { display:flex; justify-content:space-between; max-width:180px; padding:7px 0; color:var(--blue); font-size:10px; }
+.fhir-json-details summary span { font-size:13px; }
+.fhir-detail-placeholder,.fhir-setup-state { min-height:345px; padding:32px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.fhir-detail-placeholder h2,.fhir-setup-state h2 { margin:15px 0 7px; color:var(--navy); font:800 19px "Manrope",sans-serif; }
+.fhir-detail-placeholder > p,.fhir-setup-state p { max-width:420px; color:#77879c; font-size:11px; line-height:1.8; }
+.fhir-placeholder-art { position:relative; display:flex; align-items:center; justify-content:center; width:90px; height:76px; margin-bottom:21px; border:1px solid #dce6f3; border-radius:22px; color:var(--blue); background:linear-gradient(145deg,#f5f8fe,#eaf1ff); font:800 18px "Manrope",sans-serif; }
+.fhir-placeholder-art i { position:absolute; right:-7px; width:14px; height:14px; border:3px solid white; border-radius:50%; background:#8eaddf; }
+.fhir-placeholder-art i:nth-child(2) { top:8px; }
+.fhir-placeholder-art i:nth-child(3) { top:31px; right:-12px; }
+.fhir-placeholder-art i:nth-child(4) { top:54px; }
+.fhir-placeholder-points { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:13px; }
+.fhir-placeholder-points span { padding:7px 9px; border:1px solid #e4ebf4; border-radius:8px; color:#6f8199; background:#fbfcfe; font-size:9px; }
+.fhir-placeholder-points b { margin-right:5px; color:var(--blue); }
+.fhir-empty-state { display:flex; flex-direction:column; align-items:center; text-align:center; padding:34px 16px; }
+.fhir-empty-state .fhir-empty-icon { width:48px; height:48px; margin-bottom:12px; border-radius:14px; font-size:15px; }
+.fhir-empty-state h3 { margin:0 0 6px; color:var(--navy); font:800 13px "Manrope",sans-serif; }
+.fhir-empty-state p { max-width:270px; margin:0; color:#8190a5; font-size:10px; line-height:1.7; }
+.fhir-empty-state a { margin-top:10px; color:var(--blue); font-size:10px; font-weight:700; text-decoration:none; }
+.fhir-setup-state { flex-direction:row; gap:20px; text-align:left; }
+.fhir-setup-state .fhir-empty-icon { flex:0 0 66px; }
+.fhir-setup-state p { max-width:550px; margin:0; }
+.fhir-inline-empty { padding:14px; border:1px dashed #dce5f0; border-radius:10px; color:#8190a5; background:#fbfcfe; font-size:10px; }
+.fhir-workspace-panel { margin:0 auto 18px; padding:20px; }
+.fhir-workspace-heading h2 { font-size:17px; }
+.fhir-workspace-heading p { margin-top:4px; }
+.fhir-text-link { color:var(--blue); font-size:10px; font-weight:700; text-decoration:none; white-space:nowrap; }
+.fhir-text-link span { margin-left:5px; font-size:13px; }
+.fhir-safety-note { display:flex; align-items:center; gap:8px; margin:15px 0; padding:9px 11px; border:1px solid #e5edf8; border-radius:8px; color:#71839a; background:#f7f9fd; font-size:9px; }
+.fhir-sample-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; }
+.fhir-sample-card { display:grid; grid-template-columns:38px minmax(0,1fr); column-gap:11px; row-gap:12px; padding:13px; border:1px solid #e6ecf4; border-radius:11px; color:inherit; background:#fff; text-decoration:none; transition:border-color .16s,box-shadow .16s,transform .16s; }
+.fhir-sample-card:hover { border-color:#cbdaf0; box-shadow:0 7px 20px rgba(16,38,66,.06); transform:translateY(-2px); }
+.fhir-sample-avatar { display:grid; place-items:center; width:38px; height:38px; border-radius:11px; color:var(--blue); background:var(--blue-pale); font:800 13px "Manrope",sans-serif; }
+.fhir-sample-main { display:grid; min-width:0; gap:4px; }
+.fhir-sample-main b { overflow:hidden; color:var(--navy); font:800 11px "Manrope",sans-serif; text-overflow:ellipsis; white-space:nowrap; }
+.fhir-sample-main small { color:#7e8ca0; font-size:9px; }
+.fhir-sample-main small i { padding:0 3px; color:#b0bdcc; font-style:normal; }
+.fhir-sample-main code { overflow:hidden; color:#7d8ca1; font:9px ui-monospace,Consolas,monospace; text-overflow:ellipsis; white-space:nowrap; }
+.fhir-sample-footer { grid-column:1/-1; display:flex; align-items:center; gap:4px; padding-top:9px; border-top:1px solid #edf1f6; color:#8290a3; font-size:9px; }
+.fhir-sample-footer b { color:var(--navy); font:800 13px "Manrope",sans-serif; }
+.fhir-sample-footer span { margin-left:auto; color:var(--blue); font-weight:700; }
+.fhir-panel-empty { display:flex; align-items:center; gap:14px; padding:17px; border:1px dashed #dce5f0; border-radius:11px; background:#fbfcfe; }
+.fhir-panel-empty .fhir-empty-icon { width:44px; height:44px; flex:0 0 44px; border-radius:12px; font-size:14px; }
+.fhir-panel-empty div { display:grid; gap:4px; }
+.fhir-panel-empty b { color:var(--navy); font:800 11px "Manrope",sans-serif; }
+.fhir-panel-empty small { color:#8290a3; font-size:9px; line-height:1.6; }
+.fhir-encounter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(225px,1fr)); gap:10px; }
+.fhir-encounter-card { min-width:0; padding:14px; border:1px solid #e6ecf4; border-radius:11px; background:#fff; }
+.fhir-encounter-card-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:11px; }
+.fhir-encounter-symbol { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; color:var(--blue); background:var(--blue-pale); font:800 11px "Manrope",sans-serif; }
+.fhir-encounter-card .fhir-resource-type { font-size:8px; }
+.fhir-encounter-card h3 { margin:5px 0 4px; color:var(--navy); font:800 13px "Manrope",sans-serif; }
+.fhir-encounter-patient { overflow:hidden; color:#647991; font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+.fhir-encounter-card-footer { display:flex; justify-content:space-between; gap:10px; margin-top:14px; padding-top:10px; border-top:1px solid #edf1f6; color:#8794a6; font-size:8px; }
+.fhir-encounter-card-footer a { color:var(--blue); font-weight:700; text-decoration:none; white-space:nowrap; }
+@media (max-width:1100px) {
+  .fhir-explorer-grid { grid-template-columns:minmax(250px,.9fr) minmax(0,1.4fr); }
+  .fhir-stats-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:820px) {
+  .fhir-hero { align-items:flex-start; flex-direction:column; }
+  .fhir-version-card { min-width:0; }
+  .fhir-explorer-grid { grid-template-columns:1fr; }
+  .fhir-directory-card { position:static; }
+  .fhir-patient-items { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+}
+@media (max-width:560px) {
+  .fhir-hero { padding:20px; }
+  .fhir-search-card,.fhir-directory-card,.fhir-profile-card,.fhir-summary-card,.fhir-timeline-card,.fhir-workspace-panel { padding:15px; }
+  .fhir-search-form { align-items:stretch; flex-direction:column; }
+  .fhir-search-form .button { width:100%; }
+  .fhir-clear-search { padding:0; }
+  .fhir-search-foot { flex-direction:column; gap:4px; }
+  .fhir-stats-grid { grid-template-columns:1fr 1fr; gap:8px; }
+  .fhir-stat-card { align-items:flex-start; flex-direction:column; gap:7px; padding:12px; }
+  .fhir-stat-card b { font-size:20px; }
+  .fhir-profile-top { align-items:flex-start; flex-wrap:wrap; }
+  .fhir-synthetic-tag { margin-left:61px; }
+  .fhir-profile-meta { grid-template-columns:1fr; }
+  .fhir-profile-meta .fhir-address { grid-column:auto; }
+  .fhir-workspace-heading { align-items:flex-start; flex-direction:column; }
+  .fhir-panel-empty,.fhir-setup-state { align-items:flex-start; flex-direction:column; }
+  .fhir-record-head,.fhir-record-meta { align-items:flex-start; flex-direction:column; }
+  .fhir-encounter-grid,.fhir-sample-grid { grid-template-columns:1fr; }
+}

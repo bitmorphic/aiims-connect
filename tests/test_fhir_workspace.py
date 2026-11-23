@@ -32,10 +32,10 @@ class FHIRWorkspacePreviewTests(unittest.TestCase):
         ):
             response = self.client.get("/patients")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"FHIR patient samples", response.data)
+        self.assertIn(b"Synthetic patient records", response.data)
         self.assertIn(b"Alex Example", response.data)
         self.assertIn(b"synthea-patient-001", response.data)
-        self.assertIn(b"not available for hospital booking", response.data)
+        self.assertIn(b"Not available for booking or admission", response.data)
 
     def test_staff_appointments_show_encounters_as_history_not_bookable_appointments(self):
         self.sign_in()
@@ -53,8 +53,8 @@ class FHIRWorkspacePreviewTests(unittest.TestCase):
             response = self.client.get("/appointments")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Historical clinical encounters", response.data)
-        self.assertIn(b"Encounter", response.data)
-        self.assertIn(b"not bookable Appointment slots", response.data)
+        self.assertIn(b"FHIR ENCOUNTER", response.data)
+        self.assertIn(b"Not bookable appointment slots", response.data)
         self.assertIn(b"Alex Example", response.data)
 
     def test_patient_portal_does_not_show_unlinked_synthetic_fhir_records(self):
