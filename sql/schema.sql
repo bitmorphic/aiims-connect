@@ -1,7 +1,7 @@
 -- AIIMS Connect database schema (MySQL 8.4 compatible)
 -- Portable bootstrap for a NEW, EMPTY database. Select the target schema in MySQL Workbench
 -- before executing this file. Do not run it against a database containing existing data.
--- Inventory: 15 tables, 14 triggers, 11 stored procedures and 7 views.
+-- Inventory: 17 tables (15 operational + 2 FHIR), 14 triggers, 11 stored procedures and 7 views.
 -- No patient, account, appointment, prescription, admission or billing rows are included.
 -- Trigger and procedure table references use lower-case names for Linux MySQL compatibility.
 -- The importing MySQL account becomes the definer for views and stored programs.
@@ -265,6 +265,41 @@ CREATE TABLE `prescription` (
 capacity-based allocation';
 
 
+
+CREATE TABLE `fhir_import_batch` (
+    `batch_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `source_filename` varchar(255) NOT NULL,
+    `source_sha256` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `status` varchar(12) NOT NULL DEFAULT 'running',
+    `resource_count` bigint unsigned NOT NULL DEFAULT '0',
+    `patient_count` int unsigned NOT NULL DEFAULT '0',
+    `bundle_count` int unsigned NOT NULL DEFAULT '0',
+    `error_message` text,
+    `started_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `finished_at` datetime DEFAULT NULL,
+    PRIMARY KEY (`batch_id`),
+    UNIQUE KEY `uq_fhir_batch_sha256` (`source_sha256`),
+    CONSTRAINT `chk_fhir_batch_status` CHECK ((`status` in (_utf8mb4'running',_utf8mb4'completed',_utf8mb4'failed')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Idempotent imports of synthetic or approved FHIR datasets';
+
+CREATE TABLE `fhir_resource` (
+    `resource_type` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `resource_id` varchar(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `patient_fhir_id` varchar(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+    `version_id` varchar(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+    `last_updated` datetime(6) DEFAULT NULL,
+    `payload` json NOT NULL,
+    `source_bundle` varchar(255) DEFAULT NULL,
+    `import_batch_id` bigint unsigned DEFAULT NULL,
+    `imported_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`resource_type`,`resource_id`),
+    KEY `idx_fhir_patient_resource` (`patient_fhir_id`,`resource_type`,`resource_id`),
+    KEY `idx_fhir_resource_updated` (`resource_type`,`last_updated`),
+    KEY `idx_fhir_import_batch` (`import_batch_id`),
+    CONSTRAINT `fk_fhir_resource_batch` FOREIGN KEY (`import_batch_id`) REFERENCES `fhir_import_batch` (`batch_id`) ON DELETE SET NULL ON UPDATE RESTRICT,
+    CONSTRAINT `chk_fhir_resource_type` CHECK ((char_length(trim(`resource_type`)) > 0)),
+    CONSTRAINT `chk_fhir_resource_id` CHECK ((char_length(trim(`resource_id`)) > 0))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='FHIR R4 resources stored as original JSON with patient-compartment index';
 
 SET FOREIGN_KEY_CHECKS = 1;
 
