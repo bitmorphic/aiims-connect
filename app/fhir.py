@@ -36,16 +36,17 @@ PATIENT_SEARCH_TYPES = {
     "Procedure", "SupplyDelivery",
 }
 CODE_SEARCH_TYPES = {
-    "AllergyIntolerance", "Condition", "DiagnosticReport", "Immunization",
+    "AllergyIntolerance", "Condition", "DiagnosticReport",
     "MedicationRequest", "Observation", "Procedure",
 }
 STATUS_SEARCH_TYPES = {
-    "AllergyIntolerance", "CarePlan", "CareTeam", "Claim", "Condition",
-    "Device", "DiagnosticReport", "DocumentReference", "Encounter",
-    "ExplanationOfBenefit", "ImagingStudy", "Immunization",
-    "MedicationAdministration", "MedicationRequest", "Procedure",
-    "Provenance", "SupplyDelivery",
+    "CarePlan", "CareTeam", "Claim", "Device", "DiagnosticReport",
+    "DocumentReference", "Encounter", "ExplanationOfBenefit",
+    "ImagingStudy", "Immunization", "MedicationAdministration",
+    "MedicationRequest", "Procedure", "SupplyDelivery",
 }
+CLINICAL_STATUS_TYPES = {"AllergyIntolerance", "Condition"}
+VERIFICATION_STATUS_TYPES = {"AllergyIntolerance", "Condition"}
 
 
 def _fhir_response(payload, status=200):
@@ -95,6 +96,10 @@ def _capability_resource(resource_type):
         search_params.append({"name": "code", "type": "token"})
     if resource_type in STATUS_SEARCH_TYPES:
         search_params.append({"name": "status", "type": "token"})
+    if resource_type in CLINICAL_STATUS_TYPES:
+        search_params.append({"name": "clinical-status", "type": "token"})
+    if resource_type in VERIFICATION_STATUS_TYPES:
+        search_params.append({"name": "verification-status", "type": "token"})
     return {
         "type": resource_type,
         "interaction": [{"code": "read"}, {"code": "search-type"}],
@@ -160,6 +165,10 @@ def _build_search(resource_type):
         allowed.add("code")
     if resource_type in STATUS_SEARCH_TYPES:
         allowed.add("status")
+    if resource_type in CLINICAL_STATUS_TYPES:
+        allowed.add("clinical-status")
+    if resource_type in VERIFICATION_STATUS_TYPES:
+        allowed.add("verification-status")
     unknown = sorted(set(request.args.keys()) - allowed)
     if unknown:
         raise ValueError("Unsupported search parameter(s): " + ", ".join(unknown))
@@ -205,16 +214,26 @@ def _build_search(resource_type):
     code = request.args.get("code", "").strip()
     if code:
         parts = code.split("|", 1)
-        clauses.append("JSON_SEARCH(payload, 'one', %s, NULL, '$.code.coding[*].code', '$.type.coding[*].code', '$.category[*].coding[*].code', '$.category[*].code') IS NOT NULL")
+        clauses.append("JSON_SEARCH(payload, 'one', %s, NULL, '$.code.coding[*].code', '$.type.coding[*].code', '$.category[*].coding[*].code', '$.category[*].code', '$.medicationCodeableConcept.coding[*].code') IS NOT NULL")
         params.append(parts[-1])
         if len(parts) == 2 and parts[0]:
-            clauses.append("JSON_SEARCH(payload, 'one', %s, NULL, '$.code.coding[*].system', '$.type.coding[*].system', '$.category[*].coding[*].system', '$.category[*].system') IS NOT NULL")
+            clauses.append("JSON_SEARCH(payload, 'one', %s, NULL, '$.code.coding[*].system', '$.type.coding[*].system', '$.category[*].coding[*].system', '$.category[*].system', '$.medicationCodeableConcept.coding[*].system') IS NOT NULL")
             params.append(parts[0])
 
     status = request.args.get("status", "").strip()
     if status:
-        clauses.append("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(payload, '$.status')), JSON_UNQUOTE(JSON_EXTRACT(payload, '$.clinicalStatus.coding[0].code'))) = %s")
+        clauses.append("JSON_UNQUOTE(JSON_EXTRACT(payload, '$.status')) = %s")
         params.append(status)
+
+    clinical_status = request.args.get("clinical-status", "").strip()
+    if clinical_status:
+        clauses.append("JSON_SEARCH(payload, 'one', %s, NULL, '$.clinicalStatus.coding[*].code') IS NOT NULL")
+        params.append(clinical_status.split("|", 1)[-1])
+
+    verification_status = request.args.get("verification-status", "").strip()
+    if verification_status:
+        clauses.append("JSON_SEARCH(payload, 'one', %s, NULL, '$.verificationStatus.coding[*].code') IS NOT NULL")
+        params.append(verification_status.split("|", 1)[-1])
 
     try:
         count = int(request.args.get("_count", "20"))
