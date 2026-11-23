@@ -218,6 +218,10 @@ Run the seeder only against a database containing synthetic demonstration/test r
 
 Open [http://127.0.0.1:5000](http://127.0.0.1:5000). Keep the terminal running while using the application. Sign in with an account provisioned in the database.
 
+## Existing Railway database migration
+
+For an existing populated Railway database, run [sql/migrations/2026_11_patient_appointment_approval.sql](sql/migrations/2026_11_patient_appointment_approval.sql) once in MySQL Workbench **before deploying the patient self-service update**. It widens the appointment status column and permits the `Pending Approval` state. It preserves existing appointments and patient data. Do not rerun it after it succeeds.
+
 ## Railway deployment
 
 The project is deployed as a Flask web service on Railway and uses a Railway MySQL service. The public demo address is:
