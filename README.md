@@ -207,7 +207,7 @@ This is a read-only schema check. It verifies the expected tables, views, proced
 
 ### 6. Preview legacy demo-data cleanup
 
-The old synthetic data seeder is disabled. For an existing database, the cleanup utility identifies only patient accounts with the legacy `demo.patient.*` username pattern and linked staff created with a `Demo ` name. It removes their linked appointments, prescriptions, admissions, bills and referrals. It preserves branches, departments, wards, unrelated accounts, audit events (with demo actor references anonymised), and every FHIR resource.
+The old synthetic data seeder is disabled. For an existing database, the cleanup utility identifies only patient accounts with the legacy `demo.patient.*` username pattern and linked staff created with a `Demo ` name. It removes their linked appointments, prescriptions, admissions, bills and referrals. It preserves branches, departments, wards, unrelated accounts, audit events (with demo actor references anonymised), and every FHIR resource. As a lockout safeguard, it also preserves all legacy Demo staff accounts and doctor-linked activity when no active non-demo administrator exists; provision and test a real administrator before removing those accounts.
 
 First preview the exact candidates:
 
