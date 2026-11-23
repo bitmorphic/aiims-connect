@@ -243,6 +243,8 @@ def main():
             print("--backup-confirmed, and the exact --confirm phrase shown in --help.")
             return 0
 
+        # End the read-only preview transaction before starting the write transaction.
+        connection.commit()
         connection.start_transaction()
         deleted = apply_cleanup(cursor, plan)
         if plan["fhir_resource_count"] is not None:
