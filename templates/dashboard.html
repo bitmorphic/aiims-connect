@@ -1,70 +1,156 @@
 {% extends "base.html" %}
-{% block title %}Dashboard | AIIMS Connect{% endblock %}
+{% block title %}Overview | AIIMS Connect{% endblock %}
 {% block content %}
-<div class="page-heading dashboard-heading">
-  <div>
-    <h1>Dashboard</h1>
-    <p>Hospital network summary and latest activity.</p>
-  </div>
-  <div class="heading-date"><span class="status-dot"></span> Database connected</div>
-</div>
+<div class="dashboard-shell">
+  <section class="dashboard-welcome">
+    <div>
+      <span class="page-eyebrow">{{ 'PATIENT HEALTH SPACE' if session.role == 'patient' else 'HOSPITAL NETWORK OVERVIEW' }}</span>
+      <h1>{{ 'Welcome back' if session.role == 'patient' else 'Your network at a glance' }}{% if session.get('display_name') %}, {{ session.get('display_name').split(' ')[0] }}{% endif %}</h1>
+      <p>{{ 'Your care information, appointment requests and hospital updates in one place.' if session.role == 'patient' else 'A live operational view of patient services, branch capacity and connected clinical records.' }}</p>
+    </div>
+    <div class="dashboard-health-chip"><span class="status-dot"></span><span><b>Database connected</b><small>MySQL · Production workspace</small></span></div>
+  </section>
 
-<section class="simple-stats" aria-label="Database summary">
-  <div class="simple-stat"><span>Registered patients</span><strong>{{ stats.patients }}</strong></div>
-  <div class="simple-stat"><span>Appointments</span><strong>{{ stats.appointments }}</strong></div>
-  <div class="simple-stat"><span>Active admissions</span><strong>{{ stats.admissions }}</strong></div>
-  <div class="simple-stat"><span>Referrals</span><strong>{{ stats.referrals }}</strong></div>
-</section>
+  {% if roster_warning %}
+  <section class="dashboard-alert dashboard-alert-warning" role="status">
+    <span class="dashboard-alert-icon">!</span>
+    <div>
+      <b>No doctors are assigned to this roster yet</b>
+      <p>The appointment form cannot offer a doctor until at least one doctor is added to a branch and department. This was the cause of the empty doctor dropdown.</p>
+    </div>
+    <a class="button button-blue" href="{{ url_for('main.doctors') }}">Set up doctor roster <span>→</span></a>
+  </section>
+  {% endif %}
 
-<section class="dashboard-section">
-  <h2>Branch capacity</h2>
-  {% if branches %}
-  <div class="table-responsive">
-    <table class="records-table">
-      <thead><tr><th>Branch</th><th>City</th><th>Wards</th><th>Total beds</th><th>Available beds</th><th>Occupied beds</th><th>Occupancy</th></tr></thead>
-      <tbody>
+  <section class="dashboard-stats" aria-label="Operational summary">
+    <a class="dashboard-stat dashboard-stat-primary" href="{{ url_for('main.patients') }}">
+      <span class="dashboard-stat-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1M17 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 5v1"/></svg></span>
+      <span class="dashboard-stat-label">REGISTERED PATIENTS</span>
+      <b>{{ stats.patients }}</b>
+      <small>Operational UHID registry <span>↗</span></small>
+    </a>
+    <a class="dashboard-stat" href="{{ url_for('main.appointments') }}">
+      <span class="dashboard-stat-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3"/></svg></span>
+      <span class="dashboard-stat-label">APPOINTMENTS</span>
+      <b>{{ stats.appointments }}</b>
+      <small>Booked and requested visits <span>↗</span></small>
+    </a>
+    <a class="dashboard-stat" href="{{ url_for('main.admissions') }}">
+      <span class="dashboard-stat-icon"><svg viewBox="0 0 24 24"><path d="M3 20V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v13M3 14h18M7 10h3M14 10h3"/></svg></span>
+      <span class="dashboard-stat-label">ACTIVE ADMISSIONS</span>
+      <b>{{ stats.admissions }}</b>
+      <small>Current inpatient stays <span>↗</span></small>
+    </a>
+    <a class="dashboard-stat" href="{{ url_for('main.referrals') }}">
+      <span class="dashboard-stat-icon"><svg viewBox="0 0 24 24"><path d="M4 7h12a4 4 0 0 1 0 8H8M12 3l4 4-4 4M12 13l-4 4 4 4"/></svg></span>
+      <span class="dashboard-stat-label">REFERRALS</span>
+      <b>{{ stats.referrals }}</b>
+      <small>{{ 'Your referral activity' if session.role == 'doctor' else 'Network referral activity' }} <span>↗</span></small>
+    </a>
+  </section>
+
+  {% if session.role != 'patient' %}
+  <section class="fhir-overview-card">
+    <div class="fhir-overview-main">
+      <div class="fhir-overview-heading">
+        <span class="fhir-overview-symbol">R4</span>
+        <div><span class="page-eyebrow">PRIMARY CLINICAL HISTORY DATASET</span><h2>FHIR clinical records</h2></div>
+        <span class="fhir-live-label"><i></i> Connected</span>
+      </div>
+      <p>Structured synthetic clinical histories used for the interoperability and patient-history demonstration. FHIR is the clinical-history source; hospital scheduling and transactions remain in the operational database.</p>
+      <div class="fhir-overview-metrics">
+        <div><b>{{ fhir_summary.patients }}</b><small>Patients</small></div>
+        <div><b>{{ fhir_summary.encounters }}</b><small>Encounters</small></div>
+        <div><b>{{ fhir_summary.observations }}</b><small>Observations</small></div>
+        <div><b>{{ fhir_summary.conditions }}</b><small>Conditions</small></div>
+        <div><b>{{ fhir_summary.procedures }}</b><small>Procedures</small></div>
+        <div><b>{{ fhir_summary.resources }}</b><small>Total resources</small></div>
+      </div>
+    </div>
+    <div class="fhir-overview-side">
+      <span class="page-eyebrow">DATA EXPLORER</span>
+      <div class="fhir-mini-graphic"><i></i><i></i><i></i><i></i><span>FHIR</span></div>
+      <p>{{ fhir_import.resource_count if fhir_import else fhir_summary.resources }} resources indexed{% if fhir_import and fhir_import.status %} · Import {{ fhir_import.status|title }}{% endif %}</p>
+      <a class="button button-blue" href="{{ url_for('fhir.explorer') }}">Explore clinical data <span>→</span></a>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if session.role in ('chain_admin','branch_admin') %}
+  <section class="dashboard-tools">
+    <div><span class="page-eyebrow">QUICK ACTIONS</span><h2>Manage your workspace</h2></div>
+    <div class="dashboard-tool-links">
+      <a href="{{ url_for('main.appointments') }}"><span>＋</span><b>Book appointment</b><small>Schedule an OPD visit</small></a>
+      <a href="{{ url_for('main.doctors') }}"><span>＋</span><b>Doctor roster</b><small>Maintain doctors & departments</small></a>
+      <a href="{{ url_for('main.patients') }}"><span>◎</span><b>Patient registry</b><small>Search operational UHIDs</small></a>
+      <a href="{{ url_for('main.reports') }}"><span>⌁</span><b>Network reports</b><small>Revenue and capacity</small></a>
+    </div>
+  </section>
+  {% elif session.role == 'receptionist' %}
+  <section class="dashboard-tools">
+    <div><span class="page-eyebrow">FRONT DESK</span><h2>Common tasks</h2></div>
+    <div class="dashboard-tool-links">
+      <a href="{{ url_for('main.appointments') }}"><span>＋</span><b>Book appointment</b><small>Schedule an OPD visit</small></a>
+      <a href="{{ url_for('main.patients') }}"><span>◎</span><b>Patient registry</b><small>Find a patient</small></a>
+      <a href="{{ url_for('main.admissions') }}"><span>▣</span><b>Admissions</b><small>Manage inpatient stays</small></a>
+    </div>
+  </section>
+  {% elif session.role == 'patient' %}
+  <section class="dashboard-tools">
+    <div><span class="page-eyebrow">YOUR HEALTH SERVICES</span><h2>Continue your care journey</h2></div>
+    <div class="dashboard-tool-links">
+      <a href="{{ url_for('main.appointments') }}"><span>＋</span><b>Request appointment</b><small>Choose a doctor and OPD slot</small></a>
+      <a href="{{ url_for('main.patients') }}"><span>◎</span><b>My profile</b><small>Review your UHID details</small></a>
+      <a href="{{ url_for('main.my_records') }}"><span>▤</span><b>My care history</b><small>View linked hospital records</small></a>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="dashboard-lower-grid">
+    <div class="dashboard-panel">
+      <div class="dashboard-panel-heading">
+        <div><span class="page-eyebrow">BRANCH NETWORK</span><h2>Capacity overview</h2><p>Operational ward and bed capacity from MySQL.</p></div>
+        <span class="dashboard-panel-mark">01</span>
+      </div>
+      {% if branches %}
+      <div class="branch-capacity-list">
         {% for b in branches %}
-        <tr>
-          <td>{{ b.Branch_Name }}</td>
-          <td>{{ b.City }}</td>
-          <td>{{ b.Wards }}</td>
-          <td>{{ b.Total_Beds }}</td>
-          <td>{{ b.Available_Beds }}</td>
-          <td>{{ (b.Total_Beds|int) - (b.Available_Beds|int) }}</td>
-          <td>{{ b.Occupancy_Pct or 0 }}%</td>
-        </tr>
+        {% set occupancy = b.Occupancy_Pct|float %}
+        <article class="branch-capacity-item">
+          <div class="branch-capacity-top">
+            <span class="branch-capacity-name"><i></i><b>{{ b.Branch_Name }}</b></span>
+            <strong>{{ occupancy }}%</strong>
+          </div>
+          <div class="branch-capacity-track"><span style="width:{{ [occupancy,100]|min }}%"></span></div>
+          <div class="branch-capacity-meta"><span>{{ b.City }} · {{ b.Wards }} wards</span><span>{{ b.Available_Beds }} of {{ b.Total_Beds }} beds available</span></div>
+        </article>
         {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <p class="dashboard-empty">Branch capacity information is not available.</p>
-  {% endif %}
-</section>
+      </div>
+      {% else %}
+      <div class="dashboard-empty-state"><b>Branch capacity is not available</b><span>Branch and ward configuration will appear here when available.</span></div>
+      {% endif %}
+    </div>
 
-<section class="dashboard-section">
-  <h2>Recent appointments</h2>
-  {% if recent %}
-  <div class="table-responsive">
-    <table class="records-table">
-      <thead><tr><th>Appointment date</th><th>Time</th><th>Patient</th><th>Doctor</th><th>Department</th><th>Branch</th><th>Status</th></tr></thead>
-      <tbody>
+    <div class="dashboard-panel">
+      <div class="dashboard-panel-heading">
+        <div><span class="page-eyebrow">LATEST ACTIVITY</span><h2>Recent appointments</h2><p>Latest operational OPD bookings.</p></div>
+        <a href="{{ url_for('main.appointments') }}">View all ↗</a>
+      </div>
+      {% if recent %}
+      <div class="dashboard-recent-list">
         {% for a in recent %}
-        <tr>
-          <td>{{ a.Appt_Date.strftime('%Y-%m-%d') if a.Appt_Date.strftime is defined else a.Appt_Date }}</td>
-          <td>{{ a.Time_Slot }}</td>
-          <td>{{ a.Patient_Name }}</td>
-          <td>{{ a.Doctor_Name }}</td>
-          <td>{{ a.Dept_Name }}</td>
-          <td>{{ a.Branch_Name }}</td>
-          <td><span class="status-pill status-{{ a.Status|lower }}">{{ a.Status }}</span></td>
-        </tr>
+        <article class="dashboard-recent-item">
+          <span class="dashboard-recent-date"><b>{{ a.Appt_Date.strftime('%d') if a.Appt_Date.strftime is defined else a.Appt_Date[8:10] }}</b><small>{{ a.Appt_Date.strftime('%b') if a.Appt_Date.strftime is defined else a.Appt_Date[5:7] }}</small></span>
+          <div class="dashboard-recent-copy"><b>{{ a.Patient_Name }}</b><small>{{ a.Doctor_Name }} · {{ a.Dept_Name }}</small><small>{{ a.Branch_Name }} · {{ a.Time_Slot }}</small></div>
+          <span class="status-pill status-{{ a.Status|lower|replace(' ','-') }}">{{ a.Status }}</span>
+        </article>
         {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <p class="dashboard-empty">No appointments are available.</p>
-  {% endif %}
-</section>
+      </div>
+      {% else %}
+      <div class="dashboard-empty-state"><b>No appointments yet</b><span>New operational bookings and patient requests appear here.</span></div>
+      {% endif %}
+    </div>
+  </section>
+  <footer class="dashboard-footnote"><span>AIIMS Connect · Academic hospital management prototype</span><span>FHIR R4 clinical history · MySQL operational workflows</span></footer>
+</div>
 {% endblock %}
