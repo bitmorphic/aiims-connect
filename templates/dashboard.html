@@ -55,9 +55,9 @@
       <div class="fhir-overview-heading">
         <span class="fhir-overview-symbol">R4</span>
         <div><span class="page-eyebrow">PRIMARY CLINICAL HISTORY DATASET</span><h2>FHIR clinical records</h2></div>
-        <span class="fhir-live-label"><i></i> Connected</span>
+        <span class="fhir-live-label"><i></i>{{ 'Sample data loaded' if fhir_summary.resources > 0 else 'Sample not loaded' }}</span>
       </div>
-      <p>Structured synthetic clinical histories used for the interoperability and patient-history demonstration. FHIR is the clinical-history source; hospital scheduling and transactions remain in the operational database.</p>
+      <p>{% if fhir_summary.resources > 0 %}Structured synthetic clinical histories used for the interoperability and patient-history demonstration. FHIR is the clinical-history source; hospital scheduling and transactions remain in the operational database.{% else %}No synthetic FHIR resources are currently available in this deployment. Apply the FHIR storage migration if needed, then import a synthetic Synthea sample. OPD scheduling and hospital transactions continue to use the operational MySQL tables.{% endif %}</p>
       <div class="fhir-overview-metrics">
         <div><b>{{ fhir_summary.patients }}</b><small>Patients</small></div>
         <div><b>{{ fhir_summary.encounters }}</b><small>Encounters</small></div>
