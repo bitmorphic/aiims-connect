@@ -119,7 +119,7 @@
   <div class="records-toolbar"><div><span class="page-eyebrow">DATABASE RECORDS</span><h2>{{ 'Your records' if session.role == 'patient' else 'Record directory' }}</h2></div><div class="table-search"><span>⌕</span><input id="recordSearch" type="search" placeholder="Search visible records..."></div></div>
   {% if rows %}
   <div class="table-responsive"><table class="records-table" id="recordsTable">
-    <thead><tr>{% for key in rows[0].keys() %}<th>{{ key.replace('_',' ') }}</th>{% endfor %}{% if kind in ['appointments','admissions','referrals','billing'] %}<th>ACTION</th>{% endif %}</tr></thead>
+    <thead><tr>{% for key in rows[0].keys() %}<th>{{ key.replace('_',' ') }}</th>{% endfor %}{% if kind in ['appointments','admissions','referrals','billing'] %}<th>ACTION</th>{% elif kind == 'patients' %}<th>CLINICAL HISTORY</th>{% endif %}</tr></thead>
     <tbody>
     {% for r in rows %}
       <tr>
@@ -134,7 +134,9 @@
           {% endif %}
         </td>
       {% endfor %}
-      {% if kind == 'appointments' %}
+      {% if kind == 'patients' %}
+        <td class="action-cell"><a class="small-action" href="{{ url_for('clinical.patient_history', uhid=r.UHID) }}">View timeline</a></td>
+      {% elif kind == 'appointments' %}
         <td class="action-cell">
           {% if r.Status == 'Pending Approval' %}
             {% if session.role in ['chain_admin','branch_admin'] %}
