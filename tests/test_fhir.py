@@ -81,6 +81,25 @@ class FHIRApiTests(unittest.TestCase):
         response = self.client.get("/fhir/explorer")
         self.assertEqual(response.status_code, 403)
 
+    def test_fhir_sync_requires_chain_admin(self):
+        self.sign_in("doctor")
+        response = self.client.post("/fhir/sync")
+        self.assertEqual(response.status_code, 403)
+
+    def test_chain_admin_can_trigger_idempotent_fhir_projection(self):
+        self.sign_in("chain_admin")
+        expected = {
+            "counts": {"Patient": 2, "Encounter": 3, "Observation": 4,
+                       "Condition": 2, "Procedure": 2, "MedicationRequest": 0},
+            "skipped_without_patient": 0,
+            "total_projected": 13,
+        }
+        with patch("scripts.sync_fhir_tables.sync_fhir_tables", return_value=expected) as sync:
+            response = self.client.post("/fhir/sync")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/fhir/explorer", response.headers["Location"])
+        sync.assert_called_once()
+
     def test_staff_can_browse_synthetic_patient_history(self):
         self.sign_in()
         patient = {
