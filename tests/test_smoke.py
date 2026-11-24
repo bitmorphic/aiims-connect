@@ -41,7 +41,7 @@ class RepositorySmokeTests(unittest.TestCase):
 
     def test_portable_schema_contains_expected_objects(self):
         schema = self.read("sql", "schema.sql")
-        self.assertEqual(schema.count("CREATE TABLE "), 17)
+        self.assertEqual(schema.count("CREATE TABLE "), 24)
         self.assertEqual(schema.count("CREATE TRIGGER "), 14)
         self.assertEqual(schema.count("CREATE PROCEDURE "), 11)
         self.assertEqual(schema.count("CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW "), 7)
