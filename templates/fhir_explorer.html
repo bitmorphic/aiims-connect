@@ -47,6 +47,41 @@
     </article>
   </section>
 
+  <section class="content-card fhir-normalized-card">
+    <div class="fhir-panel-heading">
+      <div>
+        <span class="page-eyebrow">RELATIONAL CLINICAL LAYER</span>
+        <h2>Normalized FHIR data</h2>
+        <p>Queryable clinical tables populated from the original imported FHIR JSON archive.</p>
+      </div>
+      {% if normalized_ready %}
+      <span class="fhir-readonly-label">Schema ready</span>
+      {% else %}
+      <span class="fhir-readonly-label">Migration needed</span>
+      {% endif %}
+    </div>
+    {% if normalized_ready %}
+    <div class="fhir-normalized-grid">
+      {% for item in normalized_counts %}
+      <div class="fhir-count-card"><b>{{ item.total }}</b><span>{{ item.label }}</span></div>
+      {% endfor %}
+    </div>
+    {% if can_sync %}
+    <div class="fhir-normalized-actions">
+      <form method="post" action="{{ url_for('fhir.sync_relational') }}"
+            onsubmit="return confirm('Synchronize the imported FHIR archive into the normalized clinical tables? This is safe to repeat and will not change operational patient records.');">
+        <button class="button button-blue" type="submit">Sync clinical data</button>
+      </form>
+      <span>Chain Administrator only · Safe to repeat</span>
+    </div>
+    {% else %}
+    <p class="fhir-normalized-help">Ask a Chain Administrator to synchronize the imported clinical resources.</p>
+    {% endif %}
+    {% else %}
+    <p class="fhir-normalized-help">Apply the relational FHIR migration before synchronizing the imported records.</p>
+    {% endif %}
+  </section>
+
   <section class="content-card fhir-search-card">
     <div class="fhir-section-heading">
       <div>
