@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Clinical history · {{ patient.Name }} | AIIMS Connect{% endblock %}
+{% block content %}
+<div class="clinical-page">
+  <section class="clinical-hero">
+    <div>
+      <span class="page-eyebrow">UNIFIED PATIENT RECORD · AIIMS CONNECT + FHIR R4</span>
+      <h1>{{ patient.Name }}</h1>
+      <p>One view of hospital activity and verified interoperable clinical history.</p>
+    </div>
+    <div class="clinical-uhid">
+      <small>AIIMS CONNECT UHID</small>
+      <b>{{ patient.UHID }}</b>
+      <span>{{ patient.Gender }} · DOB {{ patient.DOB }}</span>
+    </div>
+  </section>
+
+  <section class="clinical-identity-grid">
+    <article class="clinical-identity-card">
+      <small>Operational patient record</small>
+      <b>{{ patient.Name }}</b>
+      <span>UHID {{ patient.UHID }}</span>
+      <span>{{ patient.Phone }}</span>
+      <span>{{ patient.Blood_Group or 'Blood group not recorded' }}</span>
+      <span>{{ patient.Address }}</span>
+      <em>Source: AIIMS Connect MySQL</em>
+    </article>
+    <article class="clinical-identity-card clinical-fhir-identity">
+      <small>FHIR clinical identity</small>
+      {% if linked_fhir %}
+        <b>{{ linked_fhir.full_name or 'Unnamed FHIR patient' }}</b>
+        <span>FHIR ID · {{ linked_fhir.fhir_patient_id }}</span>
+        <span>{{ linked_fhir.gender or 'Gender not recorded' }} · {{ linked_fhir.birth_date or 'DOB not recorded' }}</span>
+        <span>{{ linked_fhir.phone or linked_fhir.email or 'No contact information in source' }}</span>
+        <em>Verified manual link · Source: synthetic FHIR R4 dataset</em>
+      {% else %}
+        <b>No FHIR identity linked</b>
+        <span>This UHID currently has no verified FHIR Patient mapping.</span>
+        <em>FHIR records are never matched automatically by name.</em>
+      {% endif %}
+    </article>
+  </section>
+
+  {% if not fhir_ready %}
+  <section class="clinical-notice clinical-notice-warning">
+    <b>FHIR relational layer needs setup</b>
+    <p>The operational patient history below remains available. To use unified FHIR history, apply <code>sql/migrations/2026_11_fhir_relational_clinical.sql</code> and run <code>scripts/sync_fhir_tables.py</code> after importing the FHIR archive.</p>
+  </section>
+  {% endif %}
+
+  {% if can_link and not linked_fhir %}
+  <section class="content-card clinical-link-card">
+    <div class="clinical-section-heading">
+      <div><span class="page-eyebrow">IDENTITY RESOLUTION</span><h2>Link a verified FHIR Patient</h2><p>Search the imported synthetic directory. Review the source demographics before linking.</p></div>
+      <span class="clinical-fhir-mark">FHIR</span>
+    </div>
+    <div class="clinical-notice">
+      This is a manual one-to-one mapping. Linking does not copy FHIR data into the operational patient table and does not change appointments, admissions or billing.
+    </div>
+    <form class="clinical-search-form" method="get" action="{{ url_for('clinical.patient_history', uhid=patient.UHID) }}">
+      <label>Search FHIR name or logical ID
+        <input type="search" name="q" value="{{ search_query }}" minlength="2" maxlength="120" placeholder="Enter at least 2 characters">
+      </label>
+      <button class="button button-blue" type="submit">Search FHIR patients</button>
+    </form>
+    {% if search_query %}
+      {% if fhir_candidates %}
+      <div class="clinical-candidate-list">
+        {% for candidate in fhir_candidates %}
+        <article class="clinical-candidate">
+          <div class="clinical-candidate-copy">
+            <b>{{ candidate.full_name or 'Unnamed FHIR patient' }}</b>
+            <span>{{ candidate.gender or 'Gender not recorded' }} · {{ candidate.birth_date or 'DOB not recorded' }}</span>
+            <code>{{ candidate.fhir_patient_id }}</code>
+          </div>
+          <form method="post" action="{{ url_for('clinical.link_fhir_patient', uhid=patient.UHID) }}" onsubmit="return confirm('Have you verified this synthetic FHIR identity against the intended demonstration patient? Link it to UHID {{ patient.UHID }}?')">
+            <input type="hidden" name="fhir_patient_id" value="{{ candidate.fhir_patient_id }}">
+            <input type="hidden" name="link_note" value="Manual staff verification">
+            <button class="button button-blue" type="submit">Link to this UHID</button>
+          </form>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="clinical-empty-inline">No unlinked FHIR patients match this search. Try another name or the exact FHIR logical ID.</p>
+      {% endif %}
+    {% else %}
+      <p class="clinical-empty-inline">Search by the synthetic patient's name or FHIR ID to view candidates. No identity is selected automatically.</p>
+    {% endif %}
+  </section>
+  {% elif linked_fhir and can_link %}
+  <section class="content-card clinical-unlink-card">
+    <div><span class="page-eyebrow">VERIFIED IDENTITY LINK</span><h2>FHIR identity connected</h2><p>{{ linked_fhir.link_note or 'Manual identity link recorded.' }} · Updated {{ linked_fhir.updated_at }}</p></div>
+    <form method="post" action="{{ url_for('clinical.unlink_fhir_patient', uhid=patient.UHID) }}" onsubmit="return confirm('Unlink the FHIR identity from this UHID? The source clinical records will remain in the FHIR store.')">
+      <input type="hidden" name="fhir_patient_id" value="{{ linked_fhir.fhir_patient_id }}">
+      <button class="small-action action-danger" type="submit">Unlink identity</button>
+    </form>
+  </section>
+  {% endif %}
+
+  <section class="clinical-summary-grid">
+    <article class="clinical-summary-card"><small>AIIMS WORKFLOW EVENTS</small><b>{{ operational_count }}</b><span>Appointments, admissions, prescriptions, referrals and bills</span></article>
+    <article class="clinical-summary-card clinical-summary-fhir"><small>FHIR CLINICAL EVENTS</small><b>{{ fhir_count }}</b><span>Encounters, observations, conditions, procedures and medication requests</span></article>
+    <article class="clinical-summary-card"><small>TOTAL TIMELINE EVENTS</small><b>{{ timeline|length }}</b><span>Combined patient history from both data sources</span></article>
+  </section>
+
+  <section class="content-card clinical-timeline-card">
+    <div class="clinical-section-heading">
+      <div><span class="page-eyebrow">LONGITUDINAL PATIENT HISTORY</span><h2>Unified clinical timeline</h2><p>Events are sorted by recorded date; source labels distinguish operational from FHIR data.</p></div>
+      {% if fhir_url %}<a class="fhir-text-link" href="{{ fhir_url }}">Inspect FHIR resources ↗</a>{% endif %}
+    </div>
+    {% if timeline %}
+    <div class="clinical-timeline">
+      {% for item in timeline %}
+      <article class="clinical-event {% if item.source == 'FHIR R4' %}clinical-event-fhir{% endif %}">
+        <div class="clinical-event-marker"></div>
+        <div class="clinical-event-content">
+          <div class="clinical-event-head">
+            <div><span class="clinical-event-source">{{ item.source }} · {{ item.resource_type }}</span><h3>{{ item.label }}</h3></div>
+            <span class="fhir-status-tag">{{ item.status }}</span>
+          </div>
+          <div class="clinical-event-meta"><span>{{ item.event_date or 'Date not recorded' }}</span><code>{{ item.resource_id }}</code></div>
+          {% if item.detail %}<p>{{ item.detail }}</p>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="clinical-empty-state"><b>No clinical history is recorded yet</b><span>Operational events will appear as the patient uses hospital services. FHIR events appear after a verified FHIR identity is linked and the relational resources are synchronized.</span></div>
+    {% endif %}
+    <p class="clinical-disclaimer">Academic demonstration using synthetic FHIR source data. This timeline is a record-viewing feature, not a diagnostic or clinical decision-support tool.</p>
+  </section>
+</div>
+{% endblock %}
