@@ -64,7 +64,7 @@ class ClinicalHistoryTests(unittest.TestCase):
             response = self.client.get("/clinical/patients/AIC0000001/history?q=Avery")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"No FHIR identity linked", response.data)
-        self.assertIn(b"No identity is selected automatically", response.data)
+        self.assertIn(b"FHIR records are never matched automatically", response.data)
 
     def test_patient_can_only_open_own_clinical_history(self):
         self.sign_in("patient", "AIC0000001")
@@ -85,10 +85,11 @@ class ClinicalHistoryTests(unittest.TestCase):
 
     def test_doctors_cannot_change_patient_identity_links(self):
         self.sign_in("doctor")
-        response = self.client.post(
-            "/clinical/patients/AIC0000001/link",
-            data={"fhir_patient_id": "synthea-patient-001"},
-        )
+        with patch("app.clinical.fetch_one", return_value={"allowed": 1}):
+            response = self.client.post(
+                "/clinical/patients/AIC0000001/link",
+                data={"fhir_patient_id": "synthea-patient-001"},
+            )
         self.assertEqual(response.status_code, 403)
 
 
