@@ -1260,15 +1260,7 @@ def mark_bill_paid(bill_id):
 @bp.route("/my-records")
 @roles_required("patient")
 def my_records():
-    rows = _safe_query(
-        "SELECT * FROM patient_history_view WHERE UHID=%s ORDER BY Event_Date DESC,Record_ID DESC",
-        (session["patient_uhid"],),
-    )
-    return render_template(
-        "table.html", title="My care history", eyebrow="PATIENT PORTAL",
-        subtitle="Appointments and admissions associated with your hospital-wide UHID.",
-        rows=rows, kind="history", can_create=False,
-    )
+    return redirect(url_for("clinical.patient_history", uhid=session["patient_uhid"]))
 
 
 @bp.route("/reports")
