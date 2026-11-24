@@ -122,6 +122,20 @@ class FHIRApiTests(unittest.TestCase):
                 {"resource_type": "Patient", "total": 1},
                 {"resource_type": "Observation", "total": 1},
             ],
+            [{"TABLE_NAME": name} for name in (
+                "fhir_patient", "fhir_patient_link", "fhir_encounter",
+                "fhir_observation", "fhir_condition", "fhir_procedure",
+                "fhir_medication_request",
+            )],
+            [
+                {"label": "Patients", "total": 1},
+                {"label": "Patient links", "total": 1},
+                {"label": "Encounters", "total": 0},
+                {"label": "Observations", "total": 1},
+                {"label": "Conditions", "total": 0},
+                {"label": "Procedures", "total": 0},
+                {"label": "Medication requests", "total": 0},
+            ],
             [{"resource_type": "Observation", "total": 1}],
             [{
                 "resource_type": "Observation",
