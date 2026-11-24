@@ -14,7 +14,7 @@ The central database is MySQL. A Flask web application provides role-aware pages
 
 ### FHIR-first clinical data
 
-The imported Synthea FHIR R4 dataset is the primary source of synthetic clinical histories for the interoperability demonstration. Patient demographics and clinical resources stay in the dedicated `fhir_resource` store and are explored through the staff-only FHIR API. They are not copied into the operational AIIMS UHID registry or exposed through the patient portal. The operational tables remain available for hospital configuration, staff access, new patient registration and appointment workflows; they are not pre-populated with fake patient/clinical demo rows.
+The imported Synthea FHIR R4 dataset is the primary source of synthetic interoperable clinical history for the demonstration. Original resources remain in the lossless `fhir_resource` archive and selected clinical types are projected into normalized FHIR tables for staff queries. A staff member can manually verify and link one FHIR Patient identity to one operational UHID using the clinical-history screen. No name-based auto-matching occurs, and FHIR demographics are never copied into the operational patient registry. The unified clinical timeline combines linked FHIR Encounters, Observations, Conditions, Procedures and MedicationRequests with operational appointments, admissions, prescriptions, referrals and bills. FHIR data is synthetic and read-only; operational booking, admission, prescription and billing workflows remain in their existing MySQL tables.
 
 ### The problem this project addresses
 
@@ -48,9 +48,7 @@ The original synopsis describes a wider operational model, including a dedicated
 
 ## Database design
 
-The current schema is organised around 15 entities:
-
-`BRANCH`, `DEPARTMENT`, `WARD`, `LOGIN`, `STAFF`, `DOCTOR`, `RECEPTIONIST`, `ADMIN_STAFF`, `PATIENT`, `APPOINTMENT`, `PRESCRIPTION`, `ADMISSION`, `BILLING`, `REFERRAL` and `AUDIT_LOG`.
+The current database contains 24 entities: 15 operational entities and 9 FHIR interoperability entities. The operational model comprises `BRANCH`, `DEPARTMENT`, `WARD`, `LOGIN`, `STAFF`, `DOCTOR`, `RECEPTIONIST`, `ADMIN_STAFF`, `PATIENT`, `APPOINTMENT`, `PRESCRIPTION`, `ADMISSION`, `BILLING`, `REFERRAL` and `AUDIT_LOG`. The FHIR model comprises `FHIR_IMPORT_BATCH`, `FHIR_RESOURCE`, `FHIR_PATIENT`, `FHIR_PATIENT_LINK`, `FHIR_ENCOUNTER`, `FHIR_OBSERVATION`, `FHIR_CONDITION`, `FHIR_PROCEDURE` and `FHIR_MEDICATION_REQUEST`.
 
 Key design decisions:
 
@@ -63,10 +61,10 @@ Key design decisions:
 
 ### Entity-relationship diagram
 
-The ER diagram below represents the 15-table operational schema. Two additional FHIR integration tables store imported resources and import metadata separately.
+The integrated ER diagram represents both the 15 operational entities and the 9 FHIR entities. FHIR tables are highlighted separately; `FHIR_RESOURCE` is the lossless source archive and the normalized FHIR tables power the clinical timeline.
 
 <div align="center">
-  <img src="tests/er-diagram.png" alt="ER DIAGRAM">
+  <img src="docs/AIIMS_Connect_Integrated_ER_Diagram.png" alt="Integrated AIIMS Connect ER diagram">
   <br><br>
 </div>
 
@@ -74,7 +72,7 @@ The ER diagram below represents the 15-table operational schema. Two additional 
 
 | Database object | Count | Purpose |
 | --- | ---: | --- |
-| Tables | 17 | 15 operational tables plus 2 isolated FHIR import/resource tables. |
+| Tables | 24 | 15 operational tables plus 9 FHIR interoperability and clinical-history tables. |
 | Views | 7 | Role-oriented data and aggregated patient-history, ward, occupancy, referral and revenue information. |
 | Stored procedures | 11 | Encapsulate database workflows such as booking, admission, discharge, billing and referral transitions. |
 | Triggers | 14 | Enforce or maintain selected data rules, including bed-capacity updates and audit entries. |
