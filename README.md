@@ -130,6 +130,7 @@ aiims-connect/
 │   ├── __init__.py
 │   ├── db.py
 │   ├── routes.py
+│   ├── clinical.py
 │   └── fhir.py
 ├── scripts/
 │   ├── clean_demo_data.py
@@ -145,6 +146,7 @@ aiims-connect/
 │   ├── app.js
 │   └── style.css
 ├── templates/
+│   ├── clinical_history.html
 │   └── fhir_explorer.html
 ├── tests/
 ├── .env.example
@@ -248,7 +250,7 @@ AIIMS Connect uses an isolated, read-only FHIR R4 store as the primary clinical-
 
 The supplied Synthea ZIP contains 115 FHIR Bundles, 113 synthetic Patient resources and 130,703 resource entries across 24 resource types. The importer preserves each original FHIR resource as JSON in `fhir_resource`; `fhir_import_batch` records the source archive hash and import status. The additive relational projection creates `fhir_patient`, `fhir_encounter`, `fhir_observation`, `fhir_condition`, `fhir_procedure` and `fhir_medication_request`, plus `fhir_patient_link` for an optional verified UHID mapping. FHIR resource IDs remain distinct from AIIMS UHIDs, and patient-compartment indexes are derived from explicit Patient references inside Bundles.
 
-The FHIR tables are separate from the operational `patient`, `appointment`, `prescription`, `admission` and `billing` tables. No automatic matching or merging of Synthea records with AIIMS UHIDs occurs. The sync preserves original FHIR names and does not insert or update operational patient rows. The legacy seeded operational demo records are no longer part of the intended baseline. New account registrations and appointment requests use the operational tables; synthetic historical clinical data remains in FHIR. Patient accounts cannot access this unlinked synthetic test dataset; authenticated hospital staff can use the API for demonstration and integration testing.
+The FHIR tables remain separate from the operational `patient`, `appointment`, `prescription`, `admission` and `billing` tables. No automatic matching or merging of Synthea records with AIIMS UHIDs occurs. The sync preserves original FHIR names and does not insert or update operational patient rows. Staff can open `/clinical/patients/<UHID>/history` from the patient registry, manually verify a FHIR Patient identity and create a one-to-one link, then review the combined operational/FHIR timeline. Patients can open the same timeline through My Records, but only for their own UHID and only after an approved link exists. Unlinked synthetic FHIR records remain staff-only. Doctors can view only patients with an existing appointment assignment; only chain administrators, branch administrators and receptionists can create or remove identity links. The original FHIR resources remain read-only.
 
 ### Import the dataset
 
@@ -276,7 +278,7 @@ The CapabilityStatement is available at:
 
 Resource responses use `application/fhir+json`. Search responses are FHIR `Bundle` resources of type `searchset`; errors use `OperationOutcome`. Search supports the parameters declared by the CapabilityStatement: `_id`, `_count`, Patient `name`/`gender`/`birthdate`/`identifier`, and applicable `patient`/`code`/`status`/`clinical-status`/`verification-status` searches. Server-side paging uses `_offset` in the next link, and `_summary=count` returns only the total.
 
-FHIR resource reads and searches require an authenticated staff account. The Patient portal is deliberately denied access to the synthetic records because they have no approved mapping to AIIMS UHIDs. This first iteration is read-only: it does not implement FHIR create/update/delete, transaction processing, terminology validation or full conformance testing. It demonstrates the FHIR R4 resource model and REST read/search interactions without claiming to be a production FHIR server.
+FHIR API resource reads and searches require an authenticated staff account. The patient portal cannot browse the unlinked synthetic dataset; it can only see FHIR clinical history included in the patient's own unified timeline after an authorised staff member creates a verified UHID mapping. The FHIR timeline is read-only. The API does not implement FHIR create/update/delete, transaction processing, terminology validation or full conformance testing. It demonstrates the FHIR R4 resource model and REST read/search interactions without claiming to be a production FHIR server.
 
 ## Railway deployment
 
