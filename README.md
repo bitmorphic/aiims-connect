@@ -64,8 +64,9 @@ Key design decisions:
 The integrated ER diagram represents both the 15 operational entities and the 9 FHIR entities. FHIR tables are highlighted separately; `FHIR_RESOURCE` is the lossless source archive and the normalized FHIR tables power the clinical timeline.
 
 <div align="center">
-  <img src="docs/AIIMS_Connect_Integrated_ER_Diagram.png" alt="Integrated AIIMS Connect ER diagram">
+  <img src="docs/AIIMS_Connect_Integrated_ER_Diagram.svg" alt="Integrated AIIMS Connect ER diagram">
   <br><br>
+  <a href="docs/AIIMS_Connect_Integrated_ER_Diagram.svg">Open zoomable integrated ER diagram (SVG)</a>
 </div>
 
 ### DBMS objects
