@@ -1738,3 +1738,385 @@ select:focus-visible, textarea:focus-visible {
   .clinical-search-form,.clinical-candidate { align-items:stretch; flex-direction:column; }
   .clinical-candidate .button { width:100%; }
 }
+
+
+/* Readability pass — consistent, accessible type scale across AIIMS Connect.
+   Keep the existing visual system; raise small labels, body copy, controls and tables. */
+:root {
+  --ui-text: #263b54;
+  --ui-muted: #5e7188;
+  --ui-font-body: 15px;
+  --ui-font-small: 12px;
+  --ui-font-label: 13px;
+}
+
+.app-body {
+  font-size: var(--ui-font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.app-body .app-main {
+  color: var(--ui-text);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.app-body .app-main p {
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.app-body .app-main :is(li, dd, dt) {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.app-body .app-main :is(small, .field-hint, .page-note, .helper-text) {
+  font-size: var(--ui-font-small);
+  line-height: 1.5;
+}
+
+.app-body .app-main :is(label, .form-field, .data-form label, .doctor-create-form label) {
+  font-size: var(--ui-font-label);
+  line-height: 1.45;
+  font-weight: 650;
+}
+
+.app-body .app-main :is(input, select, textarea, .table-search input) {
+  font-size: 15px;
+  line-height: 1.45;
+  min-height: 44px;
+}
+
+.app-body .app-main textarea {
+  min-height: 104px;
+}
+
+.app-body .app-main :is(button, .button, .small-action, .text-link) {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.app-body .app-main .page-heading h1,
+.app-body .app-main .dashboard-heading h1 {
+  font-size: clamp(29px, 2.4vw, 36px);
+  line-height: 1.2;
+  letter-spacing: -.8px;
+}
+
+.app-body .app-main :is(.page-heading p, .workspace-page-heading p, .dashboard-welcome p) {
+  color: var(--ui-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.app-body .app-main .page-eyebrow {
+  color: #536d89;
+  font-size: 11px;
+  letter-spacing: 1px;
+  line-height: 1.4;
+}
+
+.app-body .side-link,
+.app-body .side-link > span {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.app-body .sidebar-label {
+  font-size: 10px;
+  letter-spacing: 1.1px;
+}
+
+.app-body .sidebar-context small,
+.app-body .sidebar-status,
+.app-body .sidebar-version {
+  font-size: 11px;
+}
+
+.app-body .records-table th {
+  padding: 14px 14px;
+  color: #5c7088;
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: .45px;
+}
+
+.app-body .records-table td {
+  padding: 14px;
+  color: #3f536c;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.app-body .records-table .status-pill,
+.app-body .status-pill,
+.app-body .fhir-status-tag {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.app-body .table-count,
+.app-body .heading-date {
+  font-size: 13px;
+  color: #536a84;
+}
+
+.app-body .table-count small {
+  font-size: 12px;
+}
+
+.app-body .dashboard-health-chip b {
+  font-size: 12px;
+}
+
+.app-body .dashboard-health-chip small {
+  color: #667a91;
+  font-size: 11px;
+}
+
+.app-body .dashboard-alert b {
+  font-size: 14px;
+}
+
+.app-body .dashboard-alert p {
+  color: #715f40;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.app-body .dashboard-stat-label {
+  color: #637991;
+  font-size: 10px;
+  letter-spacing: .7px;
+}
+
+.app-body .dashboard-stat small {
+  color: #61758c;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.app-body .dashboard-tool-links b {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.app-body .dashboard-tool-links small,
+.app-body .dashboard-panel-heading p,
+.app-body .dashboard-panel-heading > a {
+  color: #657991;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.app-body .dashboard-recent-copy b {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.app-body .dashboard-recent-copy small,
+.app-body .dashboard-empty-state span,
+.app-body .dashboard-footnote {
+  color: #687c92;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.app-body .fhir-overview-main > p,
+.app-body .fhir-hero-copy > p,
+.app-body .fhir-detail-placeholder > p,
+.app-body .fhir-setup-state p,
+.app-body .fhir-empty-panel p,
+.app-body .fhir-empty-state p {
+  color: #596f88;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.app-body .fhir-overview-metrics small,
+.app-body .fhir-overview-side p,
+.app-body .fhir-stat-card small,
+.app-body .fhir-stat-card div span,
+.app-body .fhir-search-field span,
+.app-body .fhir-search-foot,
+.app-body .fhir-patient-copy small,
+.app-body .fhir-profile-meta small,
+.app-body .fhir-profile-meta b,
+.app-body .fhir-record-meta,
+.app-body .fhir-json-details summary,
+.app-body .fhir-safety-note,
+.app-body .fhir-sample-footer,
+.app-body .fhir-inline-empty {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.app-body .fhir-patient-copy b,
+.app-body .fhir-record h3,
+.app-body .fhir-workspace-heading h2 {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.app-body .fhir-resource-type,
+.app-body .fhir-synthetic-tag,
+.app-body .fhir-readonly-label,
+.app-body .fhir-live-label {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.app-body .doctor-roster-card > p,
+.app-body .doctor-roster-card-meta,
+.app-body .doctor-roster-card-footer,
+.app-body .doctor-create-form input,
+.app-body .doctor-create-form select {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.app-body .clinical-hero p,
+.app-body .clinical-identity-card span,
+.app-body .clinical-identity-card em,
+.app-body .clinical-notice,
+.app-body .clinical-section-heading p,
+.app-body .clinical-unlink-card p,
+.app-body .clinical-summary-card span,
+.app-body .clinical-event-content p,
+.app-body .clinical-disclaimer,
+.app-body .clinical-empty-inline,
+.app-body .clinical-empty-state span,
+.app-body .clinical-candidate-copy span {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.app-body .clinical-identity-card b,
+.app-body .clinical-event-content h3 {
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.app-body .clinical-summary-card small,
+.app-body .clinical-uhid small,
+.app-body .clinical-event-source,
+.app-body .clinical-event-meta {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.app-body .clinical-search-form label,
+.app-body .clinical-search-form input,
+.app-body .clinical-candidate-copy code {
+  font-size: 13px;
+}
+
+.app-body .login-form label {
+  font-size: 14px;
+}
+
+.app-body .login-form input {
+  min-height: 48px;
+  font-size: 15px;
+}
+
+.app-body .login-hint,
+.app-body .login-story-copy p {
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.app-body .login-security,
+.app-body .login-disclaimer,
+.app-body .auth-switch,
+.app-body .login-back {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Public landing typography follows the same readable scale. */
+.public-body {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.public-body .site-nav-links a,
+.public-body .premium-nav-links a,
+.public-body .nav-staff-link {
+  font-size: 13px;
+}
+
+.public-body .hero-description,
+.public-body .premium-hero-copy > p,
+.public-body .premium-feature-card p,
+.public-body .premium-workflow-section p,
+.public-body .premium-interoperability p {
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.public-body .button,
+.public-body .premium-nav-actions .button,
+.public-body .site-nav .nav-cta,
+.public-body .premium-closing-cta .button {
+  font-size: 13px;
+}
+
+.public-body .premium-metrics small,
+.public-body .premium-metrics span,
+.public-body .premium-feature-card .page-eyebrow,
+.public-body .premium-footer,
+.public-body .site-brand small {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .app-body .app-main {
+    font-size: 14px;
+  }
+  .app-body .app-main p,
+  .app-body .app-main :is(li, dd, dt) {
+    font-size: 14px;
+  }
+  .app-body .records-table th {
+    font-size: 11px;
+  }
+  .app-body .records-table td {
+    font-size: 13px;
+  }
+  .app-body .side-link,
+  .app-body .side-link > span {
+    font-size: 14px;
+  }
+  .app-body .app-main :is(input, select, textarea) {
+    font-size: 16px; /* Prevents mobile browsers from zooming form fields. */
+  }
+  .app-body .clinical-hero h1,
+  .app-body .page-heading h1,
+  .app-body .dashboard-heading h1 {
+    font-size: 28px;
+    line-height: 1.22;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-body .app-main {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+  .app-body .records-table th,
+  .app-body .records-table td {
+    padding: 11px 10px;
+  }
+  .app-body .clinical-section-heading h2 {
+    font-size: 18px;
+  }
+  .public-body .premium-hero-copy > p,
+  .public-body .hero-description {
+    font-size: 14px;
+  }
+}
