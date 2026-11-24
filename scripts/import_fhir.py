@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Idempotently import a Synthea FHIR R4 ZIP into AIIMS Connect's FHIR store.
+"""Import a Synthea FHIR R4 ZIP, then sync core resources to relational FHIR tables.
 
-Run the accompanying SQL migration first. The ZIP is kept outside Git and can
-be supplied from a local path; records are synthetic and are never inserted
-into the operational AIIMS patient/appointment tables.
+Apply both FHIR SQL migrations first. The ZIP is kept outside Git. Original
+resource JSON is retained and selected rows are projected to relational tables.
+Operational AIIMS patient and appointment records are never rewritten.
 """
 from __future__ import annotations
 
@@ -244,6 +244,17 @@ def main():
             print("Dry run only: no MySQL connection was opened.")
         else:
             import_archive(args.zip_file, force=args.force)
+            from scripts.sync_fhir_tables import sync_fhir_tables
+            try:
+                result = sync_fhir_tables()
+            except Exception as sync_error:
+                print(f"Raw FHIR import completed, but relational sync failed: {sync_error}", file=sys.stderr)
+                return 1
+            print("Relational FHIR sync complete:")
+            for resource_type, count in result["counts"].items():
+                print(f"  {resource_type:20} {count:>10,}")
+            print(f"  {'Total projected':20} {result['total_projected']:>10,}")
+            print(f"  {'Skipped/no patient':20} {result['skipped_without_patient']:>10,}")
     except (OSError, zipfile.BadZipFile, json.JSONDecodeError, ValueError) as exc:
         print(f"FHIR import failed: {exc}", file=sys.stderr)
         return 1

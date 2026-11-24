@@ -3,7 +3,9 @@ from app.db import connect
 
 EXPECTED = {
     "tables": {"admin_staff","admission","appointment","audit_log","billing","branch",
-               "department","doctor","fhir_import_batch","fhir_resource","login","patient","prescription","receptionist",
+               "department","doctor","fhir_condition","fhir_encounter","fhir_import_batch","fhir_medication_request",
+               "fhir_observation","fhir_patient","fhir_patient_link","fhir_procedure","fhir_resource",
+               "login","patient","prescription","receptionist",
                "referral","staff","ward"},
     "views": {"branch_revenue_view","branch_ward_view","chain_occupancy_view",
               "doctor_schedule_view","patient_history_view","patient_self_view",

@@ -4,7 +4,7 @@ The repository includes [schema.sql](schema.sql), a portable, structure-only boo
 
 ## Schema inventory
 
-- 17 tables (15 operational tables plus 2 FHIR interoperability tables)
+- 24 tables (15 operational tables plus 9 FHIR interoperability/clinical tables)
 - 7 views
 - 11 stored procedures
 - 14 triggers
@@ -27,7 +27,7 @@ Never execute the bootstrap against an existing or populated database. It create
 
 ## FHIR-first synthetic clinical data
 
-The Synthea FHIR R4 archive is imported only into `fhir_import_batch` and `fhir_resource`. It is the synthetic clinical-history source for the interoperability demonstration; its Patient logical IDs are not AIIMS UHIDs and are never copied into the operational patient registry. The legacy row seeder has been disabled.
+The Synthea FHIR R4 archive is retained losslessly in `fhir_import_batch` and `fhir_resource`, then projected into seven additive relational tables for Patient, Encounter, Observation, Condition, Procedure, MedicationRequest and optional verified UHID linking. FHIR Patient logical IDs are never copied into the operational patient registry. The legacy row seeder has been disabled.
 
 For existing databases, preview and remove only the identifiable records from the retired seeder:
 
@@ -49,4 +49,4 @@ The cleanup preserves branch, department and ward configuration, non-demo accoun
 
 ## Existing database migrations and FHIR import
 
-For an existing populated database, apply the application migrations in `../sql/migrations/` in the order documented in the root README. The FHIR migration creates `fhir_import_batch` and `fhir_resource`; it does not import records. After the schema is ready, use `scripts/import_fhir.py` with the separately downloaded Synthea FHIR R4 ZIP. The import is deliberately manual because the archive is a data payload, not application source, and is not included in the repository or automatic Railway deploy.
+For an existing populated database, apply the application migrations in `../sql/migrations/` in the order documented in the root README. The FHIR migrations create the raw archive and the additive relational clinical tables; they do not import records. After the schema is ready, use `scripts/import_fhir.py` with the separately downloaded Synthea FHIR R4 ZIP. The importer then synchronizes supported resource types to the relational tables. The import is deliberately manual because the archive is a data payload, not application source, and is not included in the repository or automatic Railway deploy.

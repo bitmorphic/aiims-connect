@@ -61,7 +61,7 @@ def extract_schema(source: str) -> str:
             f"CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `{name}` AS {select_sql};"
         )
 
-    expected = {"tables": 17, "triggers": 14, "procedures": 11, "views": 7}
+    expected = {"tables": 24, "triggers": 14, "procedures": 11, "views": 7}
     actual = {"tables": len(tables), "triggers": len(triggers), "procedures": len(routines), "views": len(views)}
     if actual != expected:
         raise ValueError(f"Unexpected schema object counts. Expected {expected}; found {actual}.")
@@ -120,7 +120,7 @@ def main() -> int:
     args.output.write_text(generated, encoding="utf-8")
     print(f"Created: {args.output.resolve()}")
     print(f"Bytes: {len(generated.encode('utf-8')):,}")
-    print("Objects: 17 tables, 14 triggers, 11 procedures, 7 views")
+    print("Objects: 24 tables, 14 triggers, 11 procedures, 7 views")
     print("Safety: no rows, no explicit local DEFINER account, no DROP statements")
     print("WARNING: import only into a new, empty target database.")
     return 0

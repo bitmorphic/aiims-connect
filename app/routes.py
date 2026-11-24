@@ -94,11 +94,33 @@ def _fhir_optional_query(sql, params=()):
 
 
 def _fhir_patient_preview(query="", limit=8):
-    from .fhir import _json_resource, _patient_display
+    """Prefer normalized FHIR demographics; fall back to the source JSON archive."""
+    query = (query or "").strip()
+    where = "WHERE p.fhir_patient_id LIKE %s OR p.full_name LIKE %s" if query else ""
+    params = (f"%{query}%", f"%{query}%") if query else ()
+    rows = _fhir_optional_query(
+        """SELECT p.fhir_patient_id AS id,p.full_name AS name,p.gender,p.birth_date,
+                  COALESCE(e.encounter_count,0) AS encounter_count
+           FROM fhir_patient p
+           LEFT JOIN (
+             SELECT fhir_patient_id,COUNT(*) AS encounter_count
+             FROM fhir_encounter GROUP BY fhir_patient_id
+           ) e ON e.fhir_patient_id=p.fhir_patient_id """
+        + where + " ORDER BY p.full_name,p.fhir_patient_id LIMIT %s",
+        params + (limit,),
+    )
+    if rows:
+        return [{
+            "id": row["id"], "name": row.get("name") or "",
+            "gender": row.get("gender") or "unknown",
+            "birth_date": str(row.get("birth_date") or ""),
+            "encounter_count": int(row.get("encounter_count") or 0),
+        } for row in rows]
 
+    # Backward compatibility until the additive migration and sync have been run.
+    from .fhir import _json_resource, _patient_display
     params = ()
     where = "resource_type='Patient'"
-    query = (query or "").strip()
     if query:
         where += """ AND (resource_id LIKE %s OR JSON_SEARCH(
             payload,'one',%s,NULL,
@@ -107,8 +129,7 @@ def _fhir_patient_preview(query="", limit=8):
         params = (f"%{query}%", f"%{query}%")
     rows = _fhir_optional_query(
         "SELECT resource_id,payload FROM fhir_resource WHERE " + where
-        + " ORDER BY resource_id LIMIT %s",
-        params + (limit,),
+        + " ORDER BY resource_id LIMIT %s", params + (limit,),
     )
     if not rows:
         return []
@@ -117,24 +138,43 @@ def _fhir_patient_preview(query="", limit=8):
     count_rows = _fhir_optional_query(
         "SELECT patient_fhir_id,COUNT(*) AS encounter_count FROM fhir_resource "
         "WHERE resource_type='Encounter' AND patient_fhir_id IN (" + marks + ") "
-        "GROUP BY patient_fhir_id",
-        tuple(patient_ids),
+        "GROUP BY patient_fhir_id", tuple(patient_ids),
     )
     counts = {row["patient_fhir_id"]: int(row["encounter_count"]) for row in count_rows}
-    result = []
-    for row in rows:
-        resource = _json_resource(row["payload"])
-        result.append({
-            "id": row["resource_id"],
-            **_patient_display(resource),
-            "encounter_count": counts.get(row["resource_id"], 0),
-        })
-    return result
+    return [{
+        "id": row["resource_id"],
+        **_patient_display(_json_resource(row["payload"])),
+        "encounter_count": counts.get(row["resource_id"], 0),
+    } for row in rows]
 
 
 def _fhir_encounter_preview(limit=12):
-    from .fhir import _json_resource, _patient_display
+    """Use relational Encounter rows in the appointment history panel."""
+    rows = _fhir_optional_query(
+        """SELECT e.fhir_encounter_id AS resource_id,e.fhir_patient_id,
+                  COALESCE(p.full_name,'') AS patient_name,
+                  COALESCE(NULLIF(e.type_display,''),NULLIF(e.class_display,''),
+                           'Clinical encounter') AS label,
+                  COALESCE(e.status,'unknown') AS status,
+                  COALESCE(e.period_start,e.period_end) AS event_date
+           FROM fhir_encounter e
+           LEFT JOIN fhir_patient p ON p.fhir_patient_id=e.fhir_patient_id
+           ORDER BY COALESCE(e.period_start,e.period_end) DESC,e.fhir_encounter_id
+           LIMIT %s""",
+        (limit,),
+    )
+    if rows:
+        return [{
+            "resource_id": row["resource_id"],
+            "patient_fhir_id": row.get("fhir_patient_id") or "",
+            "patient_name": row.get("patient_name") or "",
+            "label": row.get("label") or "Clinical encounter",
+            "status": row.get("status") or "unknown",
+            "event_date": str(row.get("event_date") or ""),
+        } for row in rows]
 
+    # Backward compatibility while relational projection has not yet run.
+    from .fhir import _json_resource, _patient_display
     rows = _fhir_optional_query(
         """SELECT e.resource_id,e.patient_fhir_id,e.last_updated,e.payload,
                   p.payload AS patient_payload
@@ -144,10 +184,8 @@ def _fhir_encounter_preview(limit=12):
            WHERE e.resource_type='Encounter'
            ORDER BY COALESCE(
              JSON_UNQUOTE(JSON_EXTRACT(e.payload,'$.period.start')),
-             JSON_UNQUOTE(JSON_EXTRACT(e.payload,'$.date')),
-             e.last_updated
-           ) DESC
-           LIMIT %s""",
+             JSON_UNQUOTE(JSON_EXTRACT(e.payload,'$.date')),e.last_updated
+           ) DESC LIMIT %s""",
         (limit,),
     )
     result = []
@@ -167,18 +205,13 @@ def _fhir_encounter_preview(limit=12):
         encounter_class = resource.get("class") or {}
         if not label:
             label = encounter_class.get("display") or encounter_class.get("code") or "Clinical encounter"
-        event_date = (
-            (resource.get("period") or {}).get("start")
-            or resource.get("date")
-            or row.get("last_updated")
-            or ""
-        )
+        event_date = ((resource.get("period") or {}).get("start")
+                      or resource.get("date") or row.get("last_updated") or "")
         result.append({
             "resource_id": row["resource_id"],
             "patient_fhir_id": row.get("patient_fhir_id") or "",
             "patient_name": names.get("name", "Synthetic patient"),
-            "label": label,
-            "status": resource.get("status") or "unknown",
+            "label": label, "status": resource.get("status") or "unknown",
             "event_date": str(event_date),
         })
     return result

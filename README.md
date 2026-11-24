@@ -236,9 +236,10 @@ Open [http://127.0.0.1:5000](http://127.0.0.1:5000). Keep the terminal running w
 For an existing populated Railway database, take a backup and apply these migrations in MySQL Workbench before deploying the current branch:
 
 1. [`2026_11_patient_appointment_approval.sql`](sql/migrations/2026_11_patient_appointment_approval.sql) widens the appointment status field and permits `Pending Approval` without rewriting existing appointment rows. Run once.
-2. [`2026_11_fhir_interoperability.sql`](sql/migrations/2026_11_fhir_interoperability.sql) creates the isolated FHIR import and resource tables. It uses `CREATE TABLE IF NOT EXISTS` and can be reapplied safely.
+2. [`2026_11_fhir_interoperability.sql`](sql/migrations/2026_11_fhir_interoperability.sql) creates the original raw FHIR import and resource tables.
+3. [`2026_11_fhir_relational_clinical.sql`](sql/migrations/2026_11_fhir_relational_clinical.sql) adds seven relational FHIR tables without altering the operational schema.
 
-Select the Railway application database in Workbench before executing either file. Confirm both FHIR tables exist before deploying the FHIR API. The migrations do not import the Synthea ZIP. After a restorable backup, run the legacy cleanup preview and (only after reviewing its candidate counts) the guarded cleanup command in the setup section. This removes only rows identifiable as belonging to the retired demo seeder; it does not alter the FHIR store.
+Select the Railway application database in Workbench before executing these files. Both FHIR migrations use `CREATE TABLE IF NOT EXISTS` and are safe to reapply. The migrations do not import the Synthea ZIP. After a restorable backup, run the legacy cleanup preview and (only after reviewing its candidate counts) the guarded cleanup command in the setup section. This removes only rows identifiable as belonging to the retired demo seeder; it does not alter the FHIR store.
 
 ## FHIR R4 interoperability
 
@@ -246,20 +247,20 @@ AIIMS Connect uses an isolated, read-only FHIR R4 store as the primary clinical-
 
 ### What is stored
 
-The supplied Synthea ZIP contains 115 FHIR Bundles, 113 synthetic Patient resources and 130,703 resource entries across 24 resource types. The importer preserves each original FHIR resource as JSON in `fhir_resource`; `fhir_import_batch` records the source archive hash and import status. FHIR resource IDs are kept distinct from AIIMS UHIDs, and patient-compartment indexes are derived from explicit Patient references inside the Bundles.
+The supplied Synthea ZIP contains 115 FHIR Bundles, 113 synthetic Patient resources and 130,703 resource entries across 24 resource types. The importer preserves each original FHIR resource as JSON in `fhir_resource`; `fhir_import_batch` records the source archive hash and import status. The additive relational projection creates `fhir_patient`, `fhir_encounter`, `fhir_observation`, `fhir_condition`, `fhir_procedure` and `fhir_medication_request`, plus `fhir_patient_link` for an optional verified UHID mapping. FHIR resource IDs remain distinct from AIIMS UHIDs, and patient-compartment indexes are derived from explicit Patient references inside Bundles.
 
-The FHIR tables are intentionally separate from the operational `patient`, `appointment`, `prescription`, `admission` and `billing` tables. No automatic matching or merging of Synthea records with AIIMS UHIDs occurs. The legacy seeded operational demo records are no longer part of the intended baseline. New account registrations and appointment requests use the operational tables; synthetic historical clinical data remains in FHIR. Patient accounts cannot access this unlinked synthetic test dataset; authenticated hospital staff can use the API for demonstration and integration testing.
+The FHIR tables are separate from the operational `patient`, `appointment`, `prescription`, `admission` and `billing` tables. No automatic matching or merging of Synthea records with AIIMS UHIDs occurs. The sync preserves original FHIR names and does not insert or update operational patient rows. The legacy seeded operational demo records are no longer part of the intended baseline. New account registrations and appointment requests use the operational tables; synthetic historical clinical data remains in FHIR. Patient accounts cannot access this unlinked synthetic test dataset; authenticated hospital staff can use the API for demonstration and integration testing.
 
 ### Import the dataset
 
-The ZIP is not stored in GitHub and is not loaded automatically during app startup. In this supplied archive, the ZIP is about 28.8 MiB and its uncompressed JSON Bundle files total about 385.5 MiB, before MySQL row/index overhead. Check available Railway database storage before importing the complete sample; MySQL row, JSON and index overhead will increase the on-disk footprint. After applying the FHIR SQL migration and configuring the local `.env` to point to the intended MySQL database, run:
+The ZIP is not stored in GitHub and is not loaded automatically during app startup. In this supplied archive, the ZIP is about 28.8 MiB and its uncompressed JSON Bundle files total about 385.5 MiB, before MySQL row/index overhead. Check available Railway database storage before importing the complete sample; MySQL row, JSON and index overhead will increase the on-disk footprint. After applying both FHIR SQL migrations and configuring the local `.env` to point to the intended MySQL database, run:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\import_fhir.py "C:\path\to\synthea_sample_data_fhir_latest.zip" --dry-run
 .\.venv\Scripts\python.exe scripts\import_fhir.py "C:\path\to\synthea_sample_data_fhir_latest.zip"
 ```
 
-The dry run parses the archive and reports Bundle/resource totals without opening a database connection. The actual importer writes in small batches, tracks the SHA-256 of the ZIP, and skips an archive that has already completed successfully. Use `--force` only when you intentionally need to reprocess the exact same ZIP. It is safe to rerun after a partial failure because resources are upserted by FHIR resource type and ID.
+The dry run parses the archive and reports Bundle/resource totals without opening a database connection. The actual importer writes in small batches, tracks the SHA-256 of the ZIP, and skips an archive that has already completed successfully. It then automatically runs the relational sync. Use `--force` only when you intentionally need to reprocess the exact same ZIP. Both import and relational projection are idempotent: resources are upserted by FHIR type and logical ID. You can also rerun only the projection using `python scripts/sync_fhir_tables.py`.
 
 For a Railway import from Windows, configure `.env` with the Railway MySQL **public TCP proxy** host and port plus the database username, password and database name from Railway. Do not use Railway's private hostname from a local PC. Keep these credentials in `.env`; never commit them. The ZIP contains synthetic US-based records and US Core profiles; it is a test dataset, not AIIMS patient data or an India-specific terminology pack.
 
