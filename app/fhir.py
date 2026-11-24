@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import json
 from urllib.parse import urlencode
 
-from flask import Blueprint, abort, current_app, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, session, url_for
 
 from .db import fetch_all, fetch_one
 
@@ -393,6 +393,36 @@ def _resource_display(resource):
     return display or resource.get("resourceType", "FHIR resource"), status or "—", event_date
 
 
+@bp.post("/sync")
+def sync_relational():
+    """Populate normalized FHIR tables from the existing raw archive.
+
+    Chain-admin only. Runs on the deployed app and uses its configured
+    database connection. The projection is idempotent and does not update
+    operational patient, appointment, prescription or billing tables.
+    """
+    if not session.get("login_id"):
+        return redirect(url_for("main.login", portal="staff", next=url_for("fhir.explorer")))
+    if session.get("role") != "chain_admin":
+        abort(403)
+    try:
+        from scripts.sync_fhir_tables import sync_fhir_tables
+        result = sync_fhir_tables()
+        flash(
+            "FHIR clinical data synchronized: "
+            + str(result["total_projected"]) + " resources projected; "
+            + str(result["skipped_without_patient"]) + " skipped without a Patient reference.",
+            "success",
+        )
+    except Exception:
+        current_app.logger.exception("FHIR relational synchronization failed")
+        flash(
+            "FHIR synchronization failed. The original archive and operational patient records were left unchanged.",
+            "danger",
+        )
+    return redirect(url_for("fhir.explorer"))
+
+
 @bp.get("/explorer")
 def explorer():
     """Staff-only browser for the imported, deliberately separate Synthea dataset."""
@@ -438,6 +468,32 @@ def explorer():
             "observations": resource_counts.get("Observation", 0),
             "resources": sum(resource_counts.values()),
         }
+
+        normalized_table_names = (
+            "fhir_patient", "fhir_patient_link", "fhir_encounter",
+            "fhir_observation", "fhir_condition", "fhir_procedure",
+            "fhir_medication_request",
+        )
+        installed_rows = fetch_all(
+            "SELECT TABLE_NAME FROM information_schema.TABLES "
+            "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ("
+            + ",".join(["%s"] * len(normalized_table_names)) + ")",
+            normalized_table_names,
+        )
+        normalized_ready = {
+            row["TABLE_NAME"] for row in installed_rows
+        } == set(normalized_table_names)
+        normalized_counts = []
+        if normalized_ready:
+            normalized_counts = fetch_all(
+                """SELECT 'Patients' AS label, COUNT(*) AS total FROM fhir_patient
+                   UNION ALL SELECT 'Patient links' AS label, COUNT(*) AS total FROM fhir_patient_link
+                   UNION ALL SELECT 'Encounters' AS label, COUNT(*) AS total FROM fhir_encounter
+                   UNION ALL SELECT 'Observations' AS label, COUNT(*) AS total FROM fhir_observation
+                   UNION ALL SELECT 'Conditions' AS label, COUNT(*) AS total FROM fhir_condition
+                   UNION ALL SELECT 'Procedures' AS label, COUNT(*) AS total FROM fhir_procedure
+                   UNION ALL SELECT 'Medication requests' AS label, COUNT(*) AS total FROM fhir_medication_request"""
+            )
 
         selected = None
         counts = []
@@ -486,12 +542,15 @@ def explorer():
         return render_template(
             "fhir_explorer.html", query=query, patients=[], selected=None,
             selected_id="", counts=[], records=[], dataset_stats={},
-            storage_ready=False,
+            normalized_ready=False, normalized_counts=[],
+            can_sync=False, storage_ready=False,
         )
 
     return render_template(
         "fhir_explorer.html", query=query, patients=patient_options,
         selected=selected, selected_id=selected_id,
         counts=counts, records=records, dataset_stats=dataset_stats,
+        normalized_ready=normalized_ready, normalized_counts=normalized_counts,
+        can_sync=session.get("role") == "chain_admin",
         storage_ready=True,
     )
