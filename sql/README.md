@@ -45,7 +45,7 @@ The cleanup preserves branch, department and ward configuration, non-demo accoun
 
 ## Custom schema exports
 
-`scripts/prepare_railway_schema.py` is an optional utility for rebuilding a CREATE-only bootstrap from a different structure-only MySQL Workbench export. The standard repository setup does not require an external dump. The generator rejects exports containing the mysqldump table-data section and validates the expected object inventory (17 tables, including the two FHIR tables after migration).
+`scripts/prepare_railway_schema.py` is an optional utility for rebuilding a CREATE-only bootstrap from a different structure-only MySQL Workbench export. The standard repository setup does not require an external dump. The generator rejects exports containing the mysqldump table-data section and validates the expected object inventory (24 tables, including the normalized FHIR clinical layer).
 
 ## Existing database migrations and FHIR import
 
