@@ -23,6 +23,8 @@ def create_app():
     app.register_blueprint(bp)
     from .fhir import bp as fhir_bp
     app.register_blueprint(fhir_bp)
+    from .clinical import bp as clinical_bp
+    app.register_blueprint(clinical_bp)
 
     @app.get("/healthz")
     def healthz():
